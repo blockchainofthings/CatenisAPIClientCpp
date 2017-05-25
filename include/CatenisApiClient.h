@@ -1,0 +1,6 @@
+#ifndef __CATENISAPICLIENT_H__
+#define __CATENISAPICLIENT_H__
+
+
+
+#endif  // __CATENISAPICLIENT_H__
