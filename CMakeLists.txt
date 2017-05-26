@@ -1,5 +1,13 @@
 cmake_minimum_required(VERSION 3.7.1)
 
+# Set compiler debug flags
+#set(CMAKE_C_COMPILER "/usr/bin/clang")
+set(CMAKE_C_FLAGS "-Wall -std=c99")
+
+#SET(CMAKE_CXX_COMPILER "/usr/bin/clang++")
+set(CMAKE_CXX_FLAGS "-Wall -std=c++11")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+
 include("cmake/HunterGate.cmake")
 HunterGate(
     URL "https://github.com/ruslo/hunter/archive/v0.10.9.tar.gz"
