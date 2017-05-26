@@ -1,10 +1,14 @@
+/**
+ * @author Sungwoo Bae
+ * @createAt 25/05/2017
+ */
 #include <iostream>
 
-using namespace std;
+#include <CatenisApiClient.h>
 
 int main()
 {
-    cout << "hello world";
+    std::cout << "hello world" << std::endl;
     
     return 0;
 }
