@@ -1,12 +1,13 @@
 /**
  * @author Sungwoo Bae
- * @createAt 25/05/2017
+ * @createdAt 25/05/2017
  */
 #ifndef __CATENISAPICLIENT_H__
 #define __CATENISAPICLIENT_H__
 
 #include <string>
 #include <unordered_map>
+
 #include <boost/asio.hpp>
 #include <boost/property_tree/ptree.hpp>
 
@@ -18,33 +19,11 @@
 #define TIME_STAMP_HDR "X-BCoT-Timestamp"
 #define SIGN_VALID_DAYS 7
 
-namespace ctn {
+namespace ctn
+{
 
-struct ClientOption {
-
-    std::string host;
-    std::string environment;
-    bool secure;
-    std::string version;
-
-    ClientOption()
-    {
-        host = "catenis.io";
-        environment = "prod";
-        secure = true;
-        version = "0.2";
-    }
-
-    ClientOption(std::string host, std::string environment, bool secure, std::string version)
-    {
-        this->host = host;
-        this->environment = environment;
-        this->secure = secure;
-        this->version = version;
-    }
-};
-
-struct MethodOption {
+struct MethodOption
+{
 
     std::string encoding;
     bool crypt;
@@ -65,22 +44,24 @@ struct MethodOption {
     }
 };
 
-struct Device {
+struct Device
+{
 
     std::string id;
-    bool isProdUniqueId;
+    bool is_prod_uniqueid;
 
-    Device(std::string id, bool isProdUniqueId = false)
+    Device(std::string id, bool is_prod_uniqueid = false)
     {
         this->id = id;
-        this->isProdUniqueId = isProdUniqueId;
+        this->is_prod_uniqueid = is_prod_uniqueid;
     }
 };
 
-struct MessageContainer {
+struct MessageContainer
+{
 
     std::string txid;
-    bool isConfirmed;
+    bool is_confirmed;
     std::string ipfs;
 };
 
@@ -89,37 +70,37 @@ class CtnApiClient
 
 private:
 
-    std::string deviceId;
-    std::string apiAccessSecret;
+    std::string device_id_;
+    std::string api_access_secret_;
 
-    std::string host;
-    std::string subdomain;
-    bool secure;
-    std::string version;
+    std::string host_;
+    std::string subdomain_;
+    bool secure_;
+    std::string version_;
 
-    std::string uriPrefix;
-    std::string rootApiEndPoint;
+    std::string uri_prefix_;
+    std::string root_api_endpoint_;
     //std::string lastSignDate;
     //std::string lastSignKey;
     //reqParams
 
     //TODO: need to look more into boost.asio to be sure about the return type + parameters
-    boost::asio::streambuf postRequest(std::string methodPath, boost::property_tree::ptree data);
-    boost::asio::streambuf getRequest(std::string methodPath, std::unordered_map<std::string, std::string> &params);
-    std::string hash_sha256(const std::string str);
-    std::string sign_hmac_sha256(std::string key, std::string data);
+    boost::asio::streambuf postRequest(std::string methodpath, boost::property_tree::ptree data);
+    boost::asio::streambuf getRequest(std::string methodpath, std::unordered_map<std::string, std::string> &params);
+    std::string hashData(const std::string str);
+    // default hex_encode is false
+    std::string signData(const std::string key, const std::string data, bool hex_encode = false);
 
 public:
     
     //TODO: add comments specifying return + parameter for all functions
-    //TODO: not sure about the third parameter where it passes temporary object created by contructor to
-    // const reference --> need testing
-    CtnApiClient(std::string deviceId, std::string apiAccessSecret, const ClientOption &option = ClientOption());
+    CtnApiClient(std::string device_id, std::string api_access_secret, std::string host = "catenis.io", std::string environment = "prod", bool secure = true, std::string version = "0.2");
 
     bool logMessage(std::string message, const MethodOption &option = MethodOption());
-    bool sendMessage(std::string message, const MethodOption &option = MethodOption());
+    bool sendMessage(const Device &device, std::string message, const MethodOption &option = MethodOption());
     std::string readMessage(std::string message, const MethodOption &option = MethodOption());
-    MessageContainer& retrieveMessageContainer(std::string messageId);
+    MessageContainer& retrieveMessageContainer(std::string message_id);
+    
 };
 
 }
