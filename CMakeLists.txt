@@ -30,4 +30,4 @@ include_directories("${OPENSSL_INCLUDE_DIR}")
 
 # Link
 add_executable(CatenisAPIClient src/CatenisApiClient.cpp include/CatenisApiClient.h)
-target_link_libraries(CatenisAPIClient Boost::system ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(CatenisAPIClient Boost::system ${OPENSSL_LIBRARIES})

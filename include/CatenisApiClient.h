@@ -1,23 +1,26 @@
-/**
- * @author Sungwoo Bae
- * @createdAt 25/05/2017
- */
+//
+//  CatenisApiClient.h
+//  CatenisAPIClientCpp
+//
+//  Created by Sungwoo Bae on 5/25/17.
+//
 #ifndef __CATENISAPICLIENT_H__
 #define __CATENISAPICLIENT_H__
 
 #include <string>
 #include <map>
+#include <ctime>
 
 #include <boost/asio.hpp>
 #include <boost/property_tree/ptree.hpp>
 
-// Version specific macro
-#define API_PATH "/api/"
-#define SIGN_VERSION_ID "CTN1"
-#define SIGN_METHOD_ID "CTN1-HMAC-SHA256"
-#define SCOPE_REQUEST "ctn1_request"
-#define TIME_STAMP_HDR "X-BCoT-Timestamp"
-#define SIGN_VALID_DAYS 7
+// Version specific constants
+const std::string API_PATH = "/api/";
+const std::string SIGN_VERSION_ID = "CTN1";
+const std::string SIGN_METHOD_ID = "CTN1-HMAC-SHA256";
+const std::string  SCOPE_REQUEST = "ctn1_request";
+const std::string TIME_STAMP_HDR = "x-bcot-timestamp";
+const int SIGN_VALID_DAYS = 7;
 
 namespace ctn
 {
@@ -77,13 +80,14 @@ private:
 
     std::string uri_prefix_;
     std::string root_api_endpoint_;
-    //std::string lastSignDate;
-    //std::string lastSignKey;
+    time_t lastSignDate;
+    std::string lastSignKey;
     //reqParams
 
     //TODO: need to look more into boost.asio to be sure about the return type + parameters
-    bool postRequest(std::string methodpath, boost::property_tree::ptree &data, boost::property_tree::ptree &response_ptree);
-    std::string getSignature(
+    bool postRequest(std::string methodpath, boost::property_tree::ptree &data, MethodOption &options, boost::property_tree::ptree &response_ptree);
+    
+    void signRequest(std::string verb, std::string endpoint, std::map<std::string, std::string> &headers, std::string payload, time_t now, MethodOption &options);
     
     std::string hashData(const std::string str);
     // default hex_encode is false
@@ -91,7 +95,7 @@ private:
 
 public:
     
-    bool getRequest(std::string methodpath, std::map<std::string, std::string> &params, boost::property_tree::ptree &response_data);
+    bool getRequest(std::string methodpath, std::map<std::string, std::string> &params, MethodOption &options, boost::property_tree::ptree &response_data);
     
     //TODO: add comments specifying return + parameter for all functions
     CtnApiClient(std::string device_id, std::string api_access_secret, std::string host = "catenis.io", std::string environment = "prod", bool secure = true, std::string version = "0.2");
