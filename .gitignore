@@ -36,3 +36,6 @@
 
 # Builds
 _builds/
+
+# Xcode
+*.xcodeproj

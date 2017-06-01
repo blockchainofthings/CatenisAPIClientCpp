@@ -6,7 +6,7 @@
 #define __CATENISAPICLIENT_H__
 
 #include <string>
-#include <unordered_map>
+#include <map>
 
 #include <boost/asio.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -24,7 +24,6 @@ namespace ctn
 
 struct MethodOption
 {
-
     std::string encoding;
     bool crypt;
     std::string storage;
@@ -46,7 +45,6 @@ struct MethodOption
 
 struct Device
 {
-
     std::string id;
     bool is_prod_uniqueid;
 
@@ -59,7 +57,6 @@ struct Device
 
 struct MessageContainer
 {
-
     std::string txid;
     bool is_confirmed;
     std::string ipfs;
@@ -85,13 +82,16 @@ private:
     //reqParams
 
     //TODO: need to look more into boost.asio to be sure about the return type + parameters
-    boost::asio::streambuf postRequest(std::string methodpath, boost::property_tree::ptree data);
-    boost::asio::streambuf getRequest(std::string methodpath, std::unordered_map<std::string, std::string> &params);
+    bool postRequest(std::string methodpath, boost::property_tree::ptree &data, boost::property_tree::ptree &response_ptree);
+    std::string getSignature(
+    
     std::string hashData(const std::string str);
     // default hex_encode is false
     std::string signData(const std::string key, const std::string data, bool hex_encode = false);
 
 public:
+    
+    bool getRequest(std::string methodpath, std::map<std::string, std::string> &params, boost::property_tree::ptree &response_data);
     
     //TODO: add comments specifying return + parameter for all functions
     CtnApiClient(std::string device_id, std::string api_access_secret, std::string host = "catenis.io", std::string environment = "prod", bool secure = true, std::string version = "0.2");
