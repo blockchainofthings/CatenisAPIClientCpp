@@ -28,20 +28,20 @@ namespace ctn
 struct MethodOption
 {
     std::string encoding;
-    bool crypt;
+    bool encrypt;
     std::string storage;
 
     MethodOption()
     {
         encoding = "utf8";
-        crypt = true;
+        encrypt = true;
         storage = "auto";
     }
 
-    MethodOption(std::string encoding, bool crypt, std::string storage)
+    MethodOption(std::string encoding, bool encrypt, std::string storage)
     {
         this->encoding = encoding;
-        this->crypt = crypt;
+        this->encrypt = encrypt;
         this->storage = storage;
     }
 };
@@ -56,13 +56,6 @@ struct Device
         this->id = id;
         this->is_prod_uniqueid = is_prod_uniqueid;
     }
-};
-
-struct MessageContainer
-{
-    std::string txid;
-    bool is_confirmed;
-    std::string ipfs;
 };
 
 class CtnApiClient
@@ -103,7 +96,7 @@ public:
     bool logMessage(std::string message, std::string &data, const MethodOption &option = MethodOption());
     bool sendMessage(const Device &device, std::string message, std::string &data, const MethodOption &option = MethodOption());
     bool readMessage(std::string message_id, std::string &data, const MethodOption &option = MethodOption());
-    bool retrieveMessageContainer(std::string &data, std::string message_id);
+    bool retrieveMessageContainer(std::string message_id, std::string &data);
     
 };
 

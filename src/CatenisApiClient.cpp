@@ -21,7 +21,7 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/property_tree/json_parser.hpp>
-#include <boost/algorithm/string.hpp>
+#include <boost/regex.hpp>
 
 using boost::asio::ip::tcp;
 
@@ -29,39 +29,14 @@ int main()
 {
     ctn::CtnApiClient *client = new ctn::CtnApiClient("d4XwmaAyRJdSYp4CZuTA", "86ccbaeaff0e6fc9cff989dde3f1b2c2e92761202c40873b07166b7f20b4d7cb682be163305cae4a2f8df557536163416f539b2f6f17fb5f6a20e309fdbec9ce", "beta.catenis.io");
     
-    //GET TEST
-    /*
-    std::map<std::string, std::string> params;
-    params[":messageId"] = "mJg8G8h96nC4K5G8vLiY";
-    
-    std::map<std::string, std::string> queries;
-    queries["encoding"] = "utf8";
-    
-    boost::property_tree::ptree response_data;
-    boost::property_tree::ptree temp;
-    
-    ctn::MethodOption *options = new ctn::MethodOption();
-    
-    client->sendRequest("GET", "messages/:messageId", params, queries, temp, response_data);
-    */
-    /*
-    // POST TEST
-    std::map<std::string, std::string> params;
-    std::map<std::string, std::string> queries;
-    boost::property_tree::ptree response_data;
-    boost::property_tree::ptree request_data;
-    request_data.put("message", "test12345");
-    //ctn::MethodOption *options = new ctn::MethodOption();
-    
-    client->sendRequest("POST", "messages/log", params, queries, request_data, response_data);
-    
-    for (auto it: response_data)
-        std::cout << it.first << "," << it.second.data() << std::endl;
-    */
     std::string result;
-    client->readMessage("mAsM3cF27vLk6KA4fZoG", result);
-    
+    //client->readMessage("mAsM3cF27vLk6KA4fZoG", result);
+    //client->logMessage("hey1234", result);
+    //client->retrieveMessageContainer("mAsM3cF27vLk6KA4fZoG", result);
+    client->sendMessage(ctn::Device("dcdHMFcZh4qmGAmiMg75", false), "hey whats up",result);
     std::cout << result;
+    
+    
     
     return 0;
 }
@@ -71,21 +46,34 @@ bool ctn::CtnApiClient::logMessage(std::string message, std::string &data, const
     std::map<std::string, std::string> params;
     std::map<std::string, std::string> queries;
     boost::property_tree::ptree request_data;
-    request_data.put("message", message);
     
-    queries["encoding"] = option.encoding;
-    option.crypt ? queries["encrypt"] = "true" : queries["encrypt"] = "false";
-    queries["storage"] = option.storage;
+    // write request body
+    request_data.put("message", message);
+    request_data.put("options.encoding", option.encoding);
+    request_data.put("options.encrypt", option.encrypt);
+    request_data.put("options.storage", option.storage);
     
     return sendRequest("POST", "messages/log", params, queries, request_data, data);
 }
 
-/*
+
 bool ctn::CtnApiClient::sendMessage(const Device &device, std::string message, std::string &data, const MethodOption &option)
 {
+    std::map<std::string, std::string> params;
+    std::map<std::string, std::string> queries;
+    boost::property_tree::ptree request_data;
     
+    // write request body
+    request_data.put("targetDevice.id", device.id);
+    request_data.put("targetDevice.isProdUniqueId", device.is_prod_uniqueid);
+    request_data.put("options.encoding", option.encoding);
+    request_data.put("message", message);
+    request_data.put("options.encoding", option.encoding);
+    request_data.put("options.encrypt", option.encrypt);
+    request_data.put("options.storage", option.storage);
+    
+    return sendRequest("POST", "messages/send", params, queries, request_data, data);
 }
-*/
 
 bool ctn::CtnApiClient::readMessage(std::string message_id, std::string &data, const MethodOption &option)
 {
@@ -99,14 +87,19 @@ bool ctn::CtnApiClient::readMessage(std::string message_id, std::string &data, c
     return sendRequest("GET", "messages/:messageId", params, queries, request_data, data);
 }
 
-/*
-bool ctn::CtnApiClient::retrieveMessageContainer(std::string &data, std::string message_id)
-{
-    
-}
-*/
 
-// Get request
+bool ctn::CtnApiClient::retrieveMessageContainer(std::string message_id, std::string &data)
+{
+    std::map<std::string, std::string> params;
+    std::map<std::string, std::string> queries;
+    boost::property_tree::ptree request_data;
+    
+    params[":messageId"] = message_id;
+    
+    return sendRequest("GET", "messages/:messageId/container", params, queries, request_data, data);
+}
+
+// http request
 bool ctn::CtnApiClient::sendRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, std::string &response_data)
 {
     bool success = true;
@@ -142,7 +135,10 @@ bool ctn::CtnApiClient::sendRequest(std::string verb, std::string methodpath, st
     {
         std::ostringstream payload_buf;
         write_json (payload_buf, request_data, false);
-        payload_json = payload_buf.str();
+        
+        // fix boost ptree bug where it treats all types as string
+        boost::regex exp("\"(null|true|false|[0-9]+(\\.[0-9]+)?)\"");
+        payload_json = boost::regex_replace(payload_buf.str(), exp, "$1");
     }
     
     // Create signature and add to header
@@ -164,7 +160,6 @@ bool ctn::CtnApiClient::sendRequest(std::string verb, std::string methodpath, st
         boost::asio::connect(socket, endpoint_iterator);
         */
         
-        
         // HTTPS
         boost::asio::io_service io_service;
         // Get a list of endpoints corresponding to the server name.
@@ -179,12 +174,10 @@ bool ctn::CtnApiClient::sendRequest(std::string verb, std::string methodpath, st
         // Try each endpoint until successful connection
         boost::asio::ssl::stream<tcp::socket> socket(io_service, ctx);
         boost::asio::connect(socket.lowest_layer(), endpoint_iterator);
-        //socket.lowest_layer().set_option(tcp::no_delay(true));
         
         // Handshake with server
         socket.set_verify_mode(boost::asio::ssl::verify_none);
         socket.handshake(boost::asio::ssl::stream_base::handshake_type::client);
-        
         
         // Form the request. We specify the "Connection: close" header so that the
         // server will close the socket after transmitting the response. This will
@@ -208,6 +201,8 @@ bool ctn::CtnApiClient::sendRequest(std::string verb, std::string methodpath, st
         
         // add payload
         request_stream << payload_json;
+        
+        //std::cout << &request;
         
         // Send the request.
         boost::asio::write(socket, request);
