@@ -44,7 +44,7 @@ int main()
     
     client->sendRequest("GET", "messages/:messageId", params, queries, temp, response_data);
     */
-    
+    /*
     // POST TEST
     std::map<std::string, std::string> params;
     std::map<std::string, std::string> queries;
@@ -57,12 +57,57 @@ int main()
     
     for (auto it: response_data)
         std::cout << it.first << "," << it.second.data() << std::endl;
+    */
+    std::string result;
+    client->readMessage("mAsM3cF27vLk6KA4fZoG", result);
+    
+    std::cout << result;
     
     return 0;
 }
 
+bool ctn::CtnApiClient::logMessage(std::string message, std::string &data, const MethodOption &option)
+{
+    std::map<std::string, std::string> params;
+    std::map<std::string, std::string> queries;
+    boost::property_tree::ptree request_data;
+    request_data.put("message", message);
+    
+    queries["encoding"] = option.encoding;
+    option.crypt ? queries["encrypt"] = "true" : queries["encrypt"] = "false";
+    queries["storage"] = option.storage;
+    
+    return sendRequest("POST", "messages/log", params, queries, request_data, data);
+}
+
+/*
+bool ctn::CtnApiClient::sendMessage(const Device &device, std::string message, std::string &data, const MethodOption &option)
+{
+    
+}
+*/
+
+bool ctn::CtnApiClient::readMessage(std::string message_id, std::string &data, const MethodOption &option)
+{
+    std::map<std::string, std::string> params;
+    std::map<std::string, std::string> queries;
+    boost::property_tree::ptree request_data;
+    
+    params[":messageId"] = message_id;
+    queries["encoding"] = option.encoding;
+    
+    return sendRequest("GET", "messages/:messageId", params, queries, request_data, data);
+}
+
+/*
+bool ctn::CtnApiClient::retrieveMessageContainer(std::string &data, std::string message_id)
+{
+    
+}
+*/
+
 // Get request
-bool ctn::CtnApiClient::sendRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, boost::property_tree::ptree &response_data)
+bool ctn::CtnApiClient::sendRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, std::string &response_data)
 {
     bool success = true;
     
@@ -201,7 +246,8 @@ bool ctn::CtnApiClient::sendRequest(std::string verb, std::string methodpath, st
             throw boost::system::system_error(error);
         
         // Write response payload json to ptree
-        boost::property_tree::json_parser::read_json(response_stream, response_data);
+        //boost::property_tree::json_parser::read_json(response_stream, response_data);
+        response_data = std::string(std::istreambuf_iterator<char>(response_stream), {});
     }
     catch (std::exception& e)
     {

@@ -33,7 +33,7 @@ struct MethodOption
 
     MethodOption()
     {
-        encoding = "utf-8";
+        encoding = "utf8";
         crypt = true;
         storage = "auto";
     }
@@ -94,15 +94,16 @@ private:
 
 public:
     
-    bool sendRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, boost::property_tree::ptree &response_data);
+    //TODO move to private
+    bool sendRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, std::string &response_data);
     
     //TODO: add comments specifying return + parameter for all functions
     CtnApiClient(std::string device_id, std::string api_access_secret, std::string host = "catenis.io", std::string environment = "prod", bool secure = true, std::string version = "0.2");
 
-    bool logMessage(std::string message, const MethodOption &option = MethodOption());
-    bool sendMessage(const Device &device, std::string message, const MethodOption &option = MethodOption());
-    std::string readMessage(std::string message, const MethodOption &option = MethodOption());
-    MessageContainer& retrieveMessageContainer(std::string message_id);
+    bool logMessage(std::string message, std::string &data, const MethodOption &option = MethodOption());
+    bool sendMessage(const Device &device, std::string message, std::string &data, const MethodOption &option = MethodOption());
+    bool readMessage(std::string message_id, std::string &data, const MethodOption &option = MethodOption());
+    bool retrieveMessageContainer(std::string &data, std::string message_id);
     
 };
 
