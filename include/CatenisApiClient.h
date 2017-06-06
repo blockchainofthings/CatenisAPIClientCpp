@@ -85,9 +85,8 @@ private:
     //reqParams
 
     //TODO: need to look more into boost.asio to be sure about the return type + parameters
-    bool postRequest(std::string methodpath, boost::property_tree::ptree &data, MethodOption &options, boost::property_tree::ptree &response_ptree);
     
-    void signRequest(std::string verb, std::string endpoint, std::map<std::string, std::string> &headers, std::string payload, time_t now, MethodOption &options);
+    void signRequest(std::string verb, std::string endpoint, std::map<std::string, std::string> &headers, std::string payload, time_t now);
     
     std::string hashData(const std::string str);
     // default hex_encode is false
@@ -95,7 +94,7 @@ private:
 
 public:
     
-    bool getRequest(std::string methodpath, std::map<std::string, std::string> &params, MethodOption &options, boost::property_tree::ptree &response_data);
+    bool sendRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, boost::property_tree::ptree &response_data);
     
     //TODO: add comments specifying return + parameter for all functions
     CtnApiClient(std::string device_id, std::string api_access_secret, std::string host = "catenis.io", std::string environment = "prod", bool secure = true, std::string version = "0.2");

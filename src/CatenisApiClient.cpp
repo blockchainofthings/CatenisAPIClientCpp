@@ -29,28 +29,58 @@ int main()
 {
     ctn::CtnApiClient *client = new ctn::CtnApiClient("d4XwmaAyRJdSYp4CZuTA", "86ccbaeaff0e6fc9cff989dde3f1b2c2e92761202c40873b07166b7f20b4d7cb682be163305cae4a2f8df557536163416f539b2f6f17fb5f6a20e309fdbec9ce", "beta.catenis.io");
     
+    //GET TEST
+    /*
     std::map<std::string, std::string> params;
-    params[":messageId"] = "mnJgPaBjgPTiJPJvHTEr";
+    params[":messageId"] = "mJg8G8h96nC4K5G8vLiY";
     
-    boost::property_tree::ptree pt;
+    std::map<std::string, std::string> queries;
+    queries["encoding"] = "utf8";
+    
+    boost::property_tree::ptree response_data;
+    boost::property_tree::ptree temp;
     
     ctn::MethodOption *options = new ctn::MethodOption();
     
-    client->getRequest("messages/:messageId", params, *options, pt);
+    client->sendRequest("GET", "messages/:messageId", params, queries, temp, response_data);
+    */
     
-    for (auto it: pt)
+    // POST TEST
+    std::map<std::string, std::string> params;
+    std::map<std::string, std::string> queries;
+    boost::property_tree::ptree response_data;
+    boost::property_tree::ptree request_data;
+    request_data.put("message", "test12345");
+    //ctn::MethodOption *options = new ctn::MethodOption();
+    
+    client->sendRequest("POST", "messages/log", params, queries, request_data, response_data);
+    
+    for (auto it: response_data)
         std::cout << it.first << "," << it.second.data() << std::endl;
     
     return 0;
 }
 
 // Get request
-bool ctn::CtnApiClient::getRequest(std::string methodpath, std::map<std::string, std::string> &params, ctn::MethodOption &options, boost::property_tree::ptree &response_ptree)
+bool ctn::CtnApiClient::sendRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, boost::property_tree::ptree &response_data)
 {
     bool success = true;
     
-    // Temp server
-    //std::string server = "httpbin.org";
+    // Add entire path
+    methodpath = API_PATH + this->version_ + "/" + methodpath;
+    
+    // Process methodpath from params and queries
+    for(auto const &data : params)
+    {
+        methodpath.replace(methodpath.find(data.first), data.first.length(), data.second);
+    }
+    for(auto const &data : queries)
+    {
+        // if not first query add "&", else add "?"
+        if(data != *queries.begin()) methodpath += "&";
+        else methodpath += "?";
+        methodpath += data.first + "=" + data.second;
+    }
     
     // Create neccesary headers
     time_t now = std::time(0);
@@ -60,20 +90,23 @@ bool ctn::CtnApiClient::getRequest(std::string methodpath, std::map<std::string,
     
     headers["host"] = this->host_;
     headers[TIME_STAMP_HDR] = std::string(iso_time);
-    headers["connection"] = "close";
     
-    // Sign the request
-    signRequest("GET", methodpath, headers, "",  now, options);
-    
-    // Process methodpath from params
-    for(auto const &data : params)
+    std::string payload_json = "";
+    // if POST, process payload
+    if(verb == "POST")
     {
-        methodpath.replace(methodpath.find(data.first), data.first.length(), data.second);
+        std::ostringstream payload_buf;
+        write_json (payload_buf, request_data, false);
+        payload_json = payload_buf.str();
     }
-    methodpath = API_PATH + this->version_ + "/" + methodpath;
     
+    // Create signature and add to header
+    signRequest(verb, methodpath, headers, payload_json,  now);
+    
+    // Set up TCP/IP connection with server and send request
     try
     {
+        /*
         // HTTP
         boost::asio::io_service io_service;
         // Get a list of endpoints corresponding to the server name.
@@ -84,14 +117,14 @@ bool ctn::CtnApiClient::getRequest(std::string methodpath, std::map<std::string,
         // Try each endpoint until we successfully establish a connection.
         tcp::socket socket(io_service);
         boost::asio::connect(socket, endpoint_iterator);
+        */
         
         
-        /*
         // HTTPS
         boost::asio::io_service io_service;
         // Get a list of endpoints corresponding to the server name.
         tcp::resolver resolver(io_service);
-        tcp::resolver::query query(server, "https");
+        tcp::resolver::query query(headers["host"], "https");
         tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
         
         // Create context
@@ -101,24 +134,35 @@ bool ctn::CtnApiClient::getRequest(std::string methodpath, std::map<std::string,
         // Try each endpoint until successful connection
         boost::asio::ssl::stream<tcp::socket> socket(io_service, ctx);
         boost::asio::connect(socket.lowest_layer(), endpoint_iterator);
-        socket.lowest_layer().set_option(tcp::no_delay(true));
+        //socket.lowest_layer().set_option(tcp::no_delay(true));
         
-        //
+        // Handshake with server
         socket.set_verify_mode(boost::asio::ssl::verify_none);
         socket.handshake(boost::asio::ssl::stream_base::handshake_type::client);
-        */
+        
         
         // Form the request. We specify the "Connection: close" header so that the
         // server will close the socket after transmitting the response. This will
         // allow us to treat all data up until the EOF as the content.
         boost::asio::streambuf request;
         std::ostream request_stream(&request);
-        request_stream << "GET " << methodpath << " HTTP/1.0\r\n";
+        
+        // Use HTTP 1.0 for now, since persistent connections not needed yet
+        request_stream << verb << " " << methodpath << " HTTP/1.0\r\n";
         for(auto const &data : headers)
         {
             request_stream << data.first << ": " << data.second << "\r\n";
         }
-        request_stream << "\r\n";
+        // add extra headers if POST
+        if(verb == "POST")
+        {
+            request_stream << "Content-Type: application/json; charset=utf-8\r\n";
+            request_stream << "Content-Length: " << payload_json.length() << "\r\n";
+        }
+        request_stream << "Connection: close\r\n\r\n";
+        
+        // add payload
+        request_stream << payload_json;
         
         // Send the request.
         boost::asio::write(socket, request);
@@ -126,9 +170,10 @@ bool ctn::CtnApiClient::getRequest(std::string methodpath, std::map<std::string,
         // Check that response is OK.
         boost::asio::streambuf response_buf;
         boost::system::error_code error;
-        boost::asio::read_until(socket, response_buf, "\r\n");
         
+        boost::asio::read_until(socket, response_buf, "\r\n");
         std::istream response_stream(&response_buf);
+        
         std::string http_version;
         response_stream >> http_version;
         unsigned int status_code;
@@ -150,13 +195,13 @@ bool ctn::CtnApiClient::getRequest(std::string methodpath, std::map<std::string,
         int headerSize = boost::asio::read_until(socket, response_buf, "\r\n\r\n");
         response_buf.consume(headerSize);
         
-        // Read until EOF
+        // Read until EOF or Short read,
         boost::asio::read(socket, response_buf, boost::asio::transfer_all(), error);
-        if (error != boost::asio::error::eof)
+        if (error != boost::asio::error::eof && error !=  boost::system::error_code(ERR_PACK(ERR_LIB_SSL, 0, SSL_R_SHORT_READ), boost::asio::error::get_ssl_category()))
             throw boost::system::system_error(error);
         
         // Write response payload json to ptree
-        boost::property_tree::json_parser::read_json(response_stream, response_ptree);
+        boost::property_tree::json_parser::read_json(response_stream, response_data);
     }
     catch (std::exception& e)
     {
@@ -180,7 +225,7 @@ ctn::CtnApiClient::CtnApiClient(std::string device_id, std::string api_access_se
 }
 
 // Generate Signature
-void ctn::CtnApiClient::signRequest(std::string verb, std::string endpoint, std::map<std::string, std::string> &headers, std::string payload, time_t now, ctn::MethodOption &options)
+void ctn::CtnApiClient::signRequest(std::string verb, std::string endpoint, std::map<std::string, std::string> &headers, std::string payload, time_t now)
 {
     std::string timestamp = headers[TIME_STAMP_HDR];
     char date_buffer[9];
@@ -192,13 +237,13 @@ void ctn::CtnApiClient::signRequest(std::string verb, std::string endpoint, std:
     
     // 1) Compute conformed request
     std::string conf_req = verb + "\n";
-    conf_req += API_PATH + this->version_ + "/" + endpoint + "\n";
+    conf_req += endpoint + "\n";
     for(auto const &data : headers)
     {
-        // *All header must be in lower case
+        // All header must be in lower case
         conf_req += data.first + ":" + data.second + "\n";
     }
-    conf_req += hashData(payload);
+    conf_req += "\n" + hashData(payload) + "\n";
     
     // 2) Assemble string to sign
     std::string str_to_sign = SIGN_METHOD_ID + "\n";
@@ -206,6 +251,7 @@ void ctn::CtnApiClient::signRequest(std::string verb, std::string endpoint, std:
     std::string scope = signdate + "/" + SCOPE_REQUEST;
     str_to_sign += scope + "\n";
     str_to_sign += hashData(conf_req) + "\n";
+
     
     // 3) Generate signature
     std::string datekey = signData(SIGN_VERSION_ID + this->api_access_secret_, signdate);
@@ -215,7 +261,6 @@ void ctn::CtnApiClient::signRequest(std::string verb, std::string endpoint, std:
     //TODO check and use last sign key
     
     // 4) add auth header
-    
     headers["authorization"] = SIGN_METHOD_ID + " Credential=" + this->device_id_ + "/" + scope + ", Signature=" + signature;
 
     return;
