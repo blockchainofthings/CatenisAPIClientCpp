@@ -27,14 +27,13 @@ using boost::asio::ip::tcp;
 
 int main()
 {
-    ctn::CtnApiClient *client = new ctn::CtnApiClient("d4XwmaAyRJdSYp4CZuTA", "86ccbaeaff0e6fc9cff989dde3f1b2c2e92761202c40873b07166b7f20b4d7cb682be163305cae4a2f8df557536163416f539b2f6f17fb5f6a20e309fdbec9ce", "beta.catenis.io");
+    ctn::CtnApiClient client("d4XwmaAyRJdSYp4CZuTA", "86ccbaeaff0e6fc9cff989dde3f1b2c2e92761202c40873b07166b7f20b4d7cb682be163305cae4a2f8df557536163416f539b2f6f17fb5f6a20e309fdbec9ce", "beta.catenis.io");
     
     std::string result;
-    client->readMessage("mAsM3cF27vLk6KA4fZoG", result);
-    sleep(5);
+    client.readMessage("mAsM3cF27vLk6KA4fZoG", result);
     //client->logMessage("hey1234", result);
     //client->retrieveMessageContainer("mAsM3cF27vLk6KA4fZoG", result);
-    client->sendMessage(ctn::Device("dcdHMFcZh4qmGAmiMg75", false), "hey whats up",result);
+    client.sendMessage(ctn::Device("dcdHMFcZh4qmGAmiMg75", false), "hey whats up",result);
     std::cout << result;
     
     return 0;
@@ -146,36 +145,40 @@ bool ctn::CtnApiClient::httpRequest(std::string verb, std::string methodpath, st
     // Set up TCP/IP connection with server and send request
     try
     {
-        /*
-        // HTTP
+        std::string prefix = (this->secure_ ? "https" : "http");
+        
+        // Get a list of endpoints corresponding to the server name
         boost::asio::io_service io_service;
-        // Get a list of endpoints corresponding to the server name.
         tcp::resolver resolver(io_service);
-        tcp::resolver::query query(headers["host"], "http");
+        tcp::resolver::query query(headers["host"], prefix);
         tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
         
-        // Try each endpoint until we successfully establish a connection.
-        tcp::socket socket(io_service);
-        boost::asio::connect(socket, endpoint_iterator);
-        */
+        // Declare both socket types to reuse most http_request code for ssl and http
+        tcp::socket *http_socket;
+        boost::asio::ssl::stream<tcp::socket> *ssl_socket;
         
-        // HTTPS
-        boost::asio::io_service io_service;
-        // Get a list of endpoints corresponding to the server name.
-        tcp::resolver resolver(io_service);
-        tcp::resolver::query query(headers["host"], "https");
-        tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
-        
-        // Create context
-        boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
-        
-        // Try each endpoint until successful connection
-        boost::asio::ssl::stream<tcp::socket> socket(io_service, ctx);
-        boost::asio::connect(socket.lowest_layer(), endpoint_iterator);
-        
-        // Handshake with server
-        socket.set_verify_mode(boost::asio::ssl::verify_none);
-        socket.handshake(boost::asio::ssl::stream_base::handshake_type::client);
+        if(this->secure_)
+        {
+            // HTTPS
+            // Create context
+            boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
+            ssl_socket = new boost::asio::ssl::stream<tcp::socket>(io_service, ctx);
+            
+            // Try each endpoint until successful connection
+            //boost::asio::ssl::stream<tcp::socket> socket(io_service, ctx);
+            boost::asio::connect(ssl_socket->lowest_layer(), endpoint_iterator);
+            
+            // Handshake with server
+            ssl_socket->set_verify_mode(boost::asio::ssl::verify_none);
+            ssl_socket->handshake(boost::asio::ssl::stream_base::handshake_type::client);
+        }
+        else
+        {
+            // HTTP
+            // Try each endpoint until we successfully establish a connection.
+            http_socket = new tcp::socket(io_service);
+            boost::asio::connect(*http_socket, endpoint_iterator);
+        }
         
         // Form the request. We specify the "Connection: close" header so that the
         // server will close the socket after transmitting the response. This will
@@ -200,16 +203,15 @@ bool ctn::CtnApiClient::httpRequest(std::string verb, std::string methodpath, st
         // add payload
         request_stream << payload_json;
         
-        //std::cout << &request;
-        
-        // Send the request.
-        boost::asio::write(socket, request);
+        // Send the request, if statements needed check to use ssl_socket or http_socket
+        if(this->secure_) boost::asio::write(*ssl_socket, request);
+        else boost::asio::write(*http_socket, request);
         
         // Check that response is OK.
         boost::asio::streambuf response_buf;
         boost::system::error_code error;
-        
-        boost::asio::read_until(socket, response_buf, "\r\n");
+        if(this->secure_) boost::asio::read_until(*ssl_socket, response_buf, "\r\n");
+        else boost::asio::read_until(*http_socket, response_buf, "\r\n");
         std::istream response_stream(&response_buf);
         
         std::string http_version;
@@ -230,11 +232,14 @@ bool ctn::CtnApiClient::httpRequest(std::string verb, std::string methodpath, st
         }
         
         // Read all headers and flush buffer
-        int headerSize = boost::asio::read_until(socket, response_buf, "\r\n\r\n");
+        int headerSize;
+        if(this->secure_) headerSize = boost::asio::read_until(*ssl_socket, response_buf, "\r\n\r\n");
+        else headerSize = boost::asio::read_until(*http_socket, response_buf, "\r\n\r\n");
         response_buf.consume(headerSize);
         
         // Read until EOF or Short read,
-        boost::asio::read(socket, response_buf, boost::asio::transfer_all(), error);
+        if(this->secure_) boost::asio::read(*ssl_socket, response_buf, boost::asio::transfer_all(), error);
+        else boost::asio::read(*http_socket, response_buf, boost::asio::transfer_all(), error);
         if (error != boost::asio::error::eof && error !=  boost::system::error_code(ERR_PACK(ERR_LIB_SSL, 0, SSL_R_SHORT_READ), boost::asio::error::get_ssl_category()))
             throw boost::system::system_error(error);
         
