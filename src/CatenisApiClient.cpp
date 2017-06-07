@@ -30,13 +30,12 @@ int main()
     ctn::CtnApiClient *client = new ctn::CtnApiClient("d4XwmaAyRJdSYp4CZuTA", "86ccbaeaff0e6fc9cff989dde3f1b2c2e92761202c40873b07166b7f20b4d7cb682be163305cae4a2f8df557536163416f539b2f6f17fb5f6a20e309fdbec9ce", "beta.catenis.io");
     
     std::string result;
-    //client->readMessage("mAsM3cF27vLk6KA4fZoG", result);
+    client->readMessage("mAsM3cF27vLk6KA4fZoG", result);
+    sleep(5);
     //client->logMessage("hey1234", result);
     //client->retrieveMessageContainer("mAsM3cF27vLk6KA4fZoG", result);
     client->sendMessage(ctn::Device("dcdHMFcZh4qmGAmiMg75", false), "hey whats up",result);
     std::cout << result;
-    
-    
     
     return 0;
 }
@@ -53,7 +52,7 @@ bool ctn::CtnApiClient::logMessage(std::string message, std::string &data, const
     request_data.put("options.encrypt", option.encrypt);
     request_data.put("options.storage", option.storage);
     
-    return sendRequest("POST", "messages/log", params, queries, request_data, data);
+    return httpRequest("POST", "messages/log", params, queries, request_data, data);
 }
 
 
@@ -72,7 +71,7 @@ bool ctn::CtnApiClient::sendMessage(const Device &device, std::string message, s
     request_data.put("options.encrypt", option.encrypt);
     request_data.put("options.storage", option.storage);
     
-    return sendRequest("POST", "messages/send", params, queries, request_data, data);
+    return httpRequest("POST", "messages/send", params, queries, request_data, data);
 }
 
 bool ctn::CtnApiClient::readMessage(std::string message_id, std::string &data, const MethodOption &option)
@@ -84,7 +83,7 @@ bool ctn::CtnApiClient::readMessage(std::string message_id, std::string &data, c
     params[":messageId"] = message_id;
     queries["encoding"] = option.encoding;
     
-    return sendRequest("GET", "messages/:messageId", params, queries, request_data, data);
+    return httpRequest("GET", "messages/:messageId", params, queries, request_data, data);
 }
 
 
@@ -96,16 +95,16 @@ bool ctn::CtnApiClient::retrieveMessageContainer(std::string message_id, std::st
     
     params[":messageId"] = message_id;
     
-    return sendRequest("GET", "messages/:messageId/container", params, queries, request_data, data);
+    return httpRequest("GET", "messages/:messageId/container", params, queries, request_data, data);
 }
 
 // http request
-bool ctn::CtnApiClient::sendRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, std::string &response_data)
+bool ctn::CtnApiClient::httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, std::string &response_data)
 {
     bool success = true;
     
     // Add entire path
-    methodpath = API_PATH + this->version_ + "/" + methodpath;
+    methodpath = this->root_api_endpoint_ + "/" + methodpath;
     
     // Process methodpath from params and queries
     for(auto const &data : params)
@@ -136,13 +135,13 @@ bool ctn::CtnApiClient::sendRequest(std::string verb, std::string methodpath, st
         std::ostringstream payload_buf;
         write_json (payload_buf, request_data, false);
         
-        // fix boost ptree bug where it treats all types as string
+        // fix boost.ptree bug where it treats all types as string
         boost::regex exp("\"(null|true|false|[0-9]+(\\.[0-9]+)?)\"");
         payload_json = boost::regex_replace(payload_buf.str(), exp, "$1");
     }
     
     // Create signature and add to header
-    signRequest(verb, methodpath, headers, payload_json,  now);
+    signRequest(verb, methodpath, headers, payload_json, now);
     
     // Set up TCP/IP connection with server and send request
     try
@@ -169,7 +168,6 @@ bool ctn::CtnApiClient::sendRequest(std::string verb, std::string methodpath, st
         
         // Create context
         boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
-        ctx.set_default_verify_paths();
         
         // Try each endpoint until successful connection
         boost::asio::ssl::stream<tcp::socket> socket(io_service, ctx);
@@ -240,8 +238,8 @@ bool ctn::CtnApiClient::sendRequest(std::string verb, std::string methodpath, st
         if (error != boost::asio::error::eof && error !=  boost::system::error_code(ERR_PACK(ERR_LIB_SSL, 0, SSL_R_SHORT_READ), boost::asio::error::get_ssl_category()))
             throw boost::system::system_error(error);
         
-        // Write response payload json to ptree
-        //boost::property_tree::json_parser::read_json(response_stream, response_data);
+        // Write response data
+        // boost::property_tree::json_parser::read_json(response_stream, response_data);
         response_data = std::string(std::istreambuf_iterator<char>(response_stream), {});
     }
     catch (std::exception& e)
@@ -263,6 +261,8 @@ ctn::CtnApiClient::CtnApiClient(std::string device_id, std::string api_access_se
     this->subdomain_ = environment;
     this->secure_ = secure;
     this->version_ = version;
+    
+    this->root_api_endpoint_ = API_PATH + this->version_;
 }
 
 // Generate Signature
@@ -270,11 +270,23 @@ void ctn::CtnApiClient::signRequest(std::string verb, std::string endpoint, std:
 {
     std::string timestamp = headers[TIME_STAMP_HDR];
     char date_buffer[9];
-    strftime(date_buffer, sizeof date_buffer, "%Y%m%d", gmtime(&now));
-    std::string signdate = std::string(date_buffer);
+    std::string signdate;
     bool use_same_signkey;
     
-    //TODO check for last sign date + key
+    // Use last signkey if date < valid days
+    if(this->last_signkey_.length() != 0 && std::difftime(now, this->last_signdate_)/(3600 * 24) < SIGN_VALID_DAYS)
+    {
+        use_same_signkey = true;
+        strftime(date_buffer, sizeof date_buffer, "%Y%m%d", gmtime(&last_signdate_));
+        signdate = std::string(date_buffer);
+    }
+    else
+    {
+        use_same_signkey = false;
+        this->last_signdate_ = now;
+        strftime(date_buffer, sizeof date_buffer, "%Y%m%d", gmtime(&now));
+        signdate = std::string(date_buffer);
+    }
     
     // 1) Compute conformed request
     std::string conf_req = verb + "\n";
@@ -293,13 +305,13 @@ void ctn::CtnApiClient::signRequest(std::string verb, std::string endpoint, std:
     str_to_sign += scope + "\n";
     str_to_sign += hashData(conf_req) + "\n";
 
-    
     // 3) Generate signature
     std::string datekey = signData(SIGN_VERSION_ID + this->api_access_secret_, signdate);
-    std::string signkey = signData(datekey, SCOPE_REQUEST);
+    std::string signkey;
+    // check bool and use last sign key
+    if(use_same_signkey) signkey = this->last_signkey_;
+    else signkey = this->last_signkey_ = signData(datekey, SCOPE_REQUEST);
     std::string signature = signData(signkey, str_to_sign, true);
-    
-    //TODO check and use last sign key
     
     // 4) add auth header
     headers["authorization"] = SIGN_METHOD_ID + " Credential=" + this->device_id_ + "/" + scope + ", Signature=" + signature;

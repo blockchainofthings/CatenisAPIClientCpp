@@ -71,24 +71,18 @@ private:
     bool secure_;
     std::string version_;
 
-    std::string uri_prefix_;
     std::string root_api_endpoint_;
-    time_t lastSignDate;
-    std::string lastSignKey;
-    //reqParams
-
-    //TODO: need to look more into boost.asio to be sure about the return type + parameters
+    time_t last_signdate_;
+    std::string last_signkey_;
     
     void signRequest(std::string verb, std::string endpoint, std::map<std::string, std::string> &headers, std::string payload, time_t now);
-    
     std::string hashData(const std::string str);
-    // default hex_encode is false
     std::string signData(const std::string key, const std::string data, bool hex_encode = false);
 
 public:
     
     //TODO move to private
-    bool sendRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, std::string &response_data);
+    bool httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, std::string &response_data);
     
     //TODO: add comments specifying return + parameter for all functions
     CtnApiClient(std::string device_id, std::string api_access_secret, std::string host = "catenis.io", std::string environment = "prod", bool secure = true, std::string version = "0.2");
