@@ -73,14 +73,14 @@ bool ctn::CtnApiClient::sendMessage(const Device &device, std::string message, s
     return httpRequest("POST", "messages/send", params, queries, request_data, data);
 }
 
-bool ctn::CtnApiClient::readMessage(std::string message_id, std::string &data, const MethodOption &option)
+bool ctn::CtnApiClient::readMessage(std::string message_id, std::string &data, std::string encoding)
 {
     std::map<std::string, std::string> params;
     std::map<std::string, std::string> queries;
     boost::property_tree::ptree request_data;
     
     params[":messageId"] = message_id;
-    queries["encoding"] = option.encoding;
+    queries["encoding"] = encoding;
     
     return httpRequest("GET", "messages/:messageId", params, queries, request_data, data);
 }
@@ -153,7 +153,7 @@ bool ctn::CtnApiClient::httpRequest(std::string verb, std::string methodpath, st
         tcp::resolver::query query(headers["host"], prefix);
         tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
         
-        // Declare both socket types to reuse most http_request code for ssl and http
+        // Declare both socket type pointers to reuse code for ssl and http
         tcp::socket *http_socket;
         boost::asio::ssl::stream<tcp::socket> *ssl_socket;
         
@@ -165,7 +165,6 @@ bool ctn::CtnApiClient::httpRequest(std::string verb, std::string methodpath, st
             ssl_socket = new boost::asio::ssl::stream<tcp::socket>(io_service, ctx);
             
             // Try each endpoint until successful connection
-            //boost::asio::ssl::stream<tcp::socket> socket(io_service, ctx);
             boost::asio::connect(ssl_socket->lowest_layer(), endpoint_iterator);
             
             // Handshake with server
@@ -175,14 +174,12 @@ bool ctn::CtnApiClient::httpRequest(std::string verb, std::string methodpath, st
         else
         {
             // HTTP
-            // Try each endpoint until we successfully establish a connection.
+            // Try each endpoint until we successfully establish a connection
             http_socket = new tcp::socket(io_service);
             boost::asio::connect(*http_socket, endpoint_iterator);
         }
         
-        // Form the request. We specify the "Connection: close" header so that the
-        // server will close the socket after transmitting the response. This will
-        // allow us to treat all data up until the EOF as the content.
+        // Form the request
         boost::asio::streambuf request;
         std::ostream request_stream(&request);
         
@@ -192,18 +189,20 @@ bool ctn::CtnApiClient::httpRequest(std::string verb, std::string methodpath, st
         {
             request_stream << data.first << ": " << data.second << "\r\n";
         }
-        // add extra headers if POST
+        // Add extra headers if POST
         if(verb == "POST")
         {
             request_stream << "Content-Type: application/json; charset=utf-8\r\n";
             request_stream << "Content-Length: " << payload_json.length() << "\r\n";
         }
+        
+        // "Connection: close" header so that the server will close the socket after transmitting the response
         request_stream << "Connection: close\r\n\r\n";
         
         // add payload
         request_stream << payload_json;
         
-        // Send the request, if statements needed check to use ssl_socket or http_socket
+        // Send the request
         if(this->secure_) boost::asio::write(*ssl_socket, request);
         else boost::asio::write(*http_socket, request);
         
@@ -244,7 +243,6 @@ bool ctn::CtnApiClient::httpRequest(std::string verb, std::string methodpath, st
             throw boost::system::system_error(error);
         
         // Write response data
-        // boost::property_tree::json_parser::read_json(response_stream, response_data);
         response_data = std::string(std::istreambuf_iterator<char>(response_stream), std::istreambuf_iterator<char>());
     }
     catch (std::exception& e)
