@@ -4,10 +4,11 @@ cmake_minimum_required(VERSION 3.7.1)
 #set(CMAKE_C_COMPILER "/usr/bin/clang")
 set(CMAKE_C_FLAGS "-Wall -std=c99")
 
-#SET(CMAKE_CXX_COMPILER "/usr/bin/clang++")
+#set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 set(CMAKE_CXX_FLAGS "-Wall -std=c++11")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 
+# Add hunter to manage external libs
 include("cmake/HunterGate.cmake")
 HunterGate(
     URL "https://github.com/ruslo/hunter/archive/v0.10.9.tar.gz"
@@ -19,11 +20,11 @@ project(CatenisAPIClient)
 # Add directories 
 include_directories(src include)
 
-# Add components needed for Boost.asio
+# Add components needed for Boost.asio: system, regex
 hunter_add_package(Boost COMPONENTS system regex)
 find_package(Boost CONFIG REQUIRED system regex)
 
-# Add OpenSSl components
+# Add OpenSSl components: openssl, crypto
 hunter_add_package(OpenSSL)
 find_package(OpenSSL REQUIRED)
 include_directories("${OPENSSL_INCLUDE_DIR}")

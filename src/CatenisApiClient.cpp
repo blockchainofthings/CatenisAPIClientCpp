@@ -245,7 +245,7 @@ bool ctn::CtnApiClient::httpRequest(std::string verb, std::string methodpath, st
         
         // Write response data
         // boost::property_tree::json_parser::read_json(response_stream, response_data);
-        response_data = std::string(std::istreambuf_iterator<char>(response_stream), {});
+        response_data = std::string(std::istreambuf_iterator<char>(response_stream), std::istreambuf_iterator<char>());
     }
     catch (std::exception& e)
     {
