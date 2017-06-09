@@ -54,7 +54,6 @@ bool ctn::CtnApiClient::logMessage(std::string message, std::string &data, const
     return httpRequest("POST", "messages/log", params, queries, request_data, data);
 }
 
-
 bool ctn::CtnApiClient::sendMessage(const Device &device, std::string message, std::string &data, const MethodOption &option)
 {
     std::map<std::string, std::string> params;
@@ -84,7 +83,6 @@ bool ctn::CtnApiClient::readMessage(std::string message_id, std::string &data, s
     
     return httpRequest("GET", "messages/:messageId", params, queries, request_data, data);
 }
-
 
 bool ctn::CtnApiClient::retrieveMessageContainer(std::string message_id, std::string &data)
 {
