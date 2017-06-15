@@ -8,6 +8,7 @@ set(CMAKE_C_FLAGS "-Wall -std=c99")
 set(CMAKE_CXX_FLAGS "-Wall -std=c++11")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 
+# Silence linkage warnings
 set(CMAKE_SHARED_LINKER_FLAGS "-w")
 
 # Add hunter to manage external libs
@@ -20,6 +21,9 @@ HunterGate(
 
 project(CatenisAPIClient)
 
+# build sample option
+option(build_samples "Build sample programs." ON)
+
 # Add directories 
 include_directories(src include)
 
@@ -31,6 +35,16 @@ find_package(Boost CONFIG REQUIRED system regex)
 hunter_add_package(OpenSSL)
 find_package(OpenSSL REQUIRED)
 
-# Link
-add_executable(CatenisAPIClient src/CatenisApiClient.cpp include/CatenisApiClient.h)
+# Link and make exe
+#add_executable(CatenisAPIClient src/CatenisApiClient.cpp include/CatenisApiClient.h)
+#target_link_libraries(CatenisAPIClient Boost::system Boost::regex OpenSSL::SSL OpenSSL::Crypto)
+
+# Link and make lib
+add_library(CatenisAPIClient src/CatenisApiClient.cpp include/CatenisApiClient.h)
 target_link_libraries(CatenisAPIClient Boost::system Boost::regex OpenSSL::SSL OpenSSL::Crypto)
+
+# Build samples after the service apis
+# but keep them under src
+if (build_samples)
+  add_subdirectory(samples)
+endif()

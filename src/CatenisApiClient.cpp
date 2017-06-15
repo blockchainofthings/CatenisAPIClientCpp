@@ -25,20 +25,6 @@
 
 using boost::asio::ip::tcp;
 
-int main()
-{
-    ctn::CtnApiClient client("d4XwmaAyRJdSYp4CZuTA", "86ccbaeaff0e6fc9cff989dde3f1b2c2e92761202c40873b07166b7f20b4d7cb682be163305cae4a2f8df557536163416f539b2f6f17fb5f6a20e309fdbec9ce", "beta.catenis.io");
-    
-    std::string result;
-    client.readMessage("mAsM3cF27vLk6KA4fZoG", result);
-    //client->logMessage("hey1234", result);
-    //client->retrieveMessageContainer("mAsM3cF27vLk6KA4fZoG", result);
-    client.sendMessage(ctn::Device("dcdHMFcZh4qmGAmiMg75", false), "hey whats up",result);
-    std::cout << result;
-    
-    return 0;
-}
-
 bool ctn::CtnApiClient::logMessage(std::string message, std::string &data, const MethodOption &option)
 {
     std::map<std::string, std::string> params;
@@ -140,6 +126,10 @@ bool ctn::CtnApiClient::httpRequest(std::string verb, std::string methodpath, st
     // Create signature and add to header
     signRequest(verb, methodpath, headers, payload_json, now);
     
+    // Declare both socket type pointers to reuse code for ssl and http
+    tcp::socket *http_socket;
+    boost::asio::ssl::stream<tcp::socket> *ssl_socket;
+    
     // Set up TCP/IP connection with server and send request
     try
     {
@@ -150,10 +140,6 @@ bool ctn::CtnApiClient::httpRequest(std::string verb, std::string methodpath, st
         tcp::resolver resolver(io_service);
         tcp::resolver::query query(headers["host"], prefix);
         tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
-        
-        // Declare both socket type pointers to reuse code for ssl and http
-        tcp::socket *http_socket;
-        boost::asio::ssl::stream<tcp::socket> *ssl_socket;
         
         if(this->secure_)
         {
@@ -248,6 +234,10 @@ bool ctn::CtnApiClient::httpRequest(std::string verb, std::string methodpath, st
         std::cout << "Exception: " << e.what() << "\n";
         success = false;
     }
+    
+    // clean memory
+    if(this->secure_) delete ssl_socket;
+    else delete http_socket;
     
     return success;
 }
