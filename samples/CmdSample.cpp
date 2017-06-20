@@ -50,7 +50,6 @@ int main(int argc, char* argv[])
             std::getline(cin, message);
             
             client.logMessage(message, result);
-            cout << endl << result << endl;
         }
         else if(method == "send")
         {
@@ -60,7 +59,6 @@ int main(int argc, char* argv[])
             std::getline(cin, message);
             
             client.sendMessage(ctn::Device(device_id), message, result);
-            cout << endl << result << endl;
         }
         else if(method == "read")
         {
@@ -68,7 +66,6 @@ int main(int argc, char* argv[])
             cin.ignore();
             
             client.readMessage(message_id, result);
-            cout << endl << result << endl;
         }
         else if(method == "retrieve")
         {
@@ -76,15 +73,14 @@ int main(int argc, char* argv[])
             cin.ignore();
             
             client.retrieveMessageContainer(message_id, result);
-            cout << endl << result << endl;
         }
         else
         {
             cout << "incorrect method" << endl;
         }
         
+        cout << endl << result << endl;
         cout << endl;
-        
     }
     
     return 0;

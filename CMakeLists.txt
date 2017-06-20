@@ -1,12 +1,24 @@
-cmake_minimum_required(VERSION 3.7.1)
+cmake_minimum_required(VERSION 3.5.0)
 
 # Set compiler debug flags
-#set(CMAKE_C_COMPILER "/usr/bin/clang")
-set(CMAKE_C_FLAGS "-Wall -std=c99")
+#set(CMAKE_C_FLAGS "-g -Wall")
+#set(CMAKE_CXX_FLAGS "-g -Wall")
 
-#set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
-set(CMAKE_CXX_FLAGS "-Wall -std=c++11")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
+# Set c++11
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  # add clang specific flags
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  # add GNU specific flags
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+  # add Intel specific flags
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  set(CMAKE_CXX_FLAGS "/EHsc")
+  add_definitions(-DBOOST_ALL_NO_LIB=1)
+endif()
 
 # Silence linkage warnings
 set(CMAKE_SHARED_LINKER_FLAGS "-w")
