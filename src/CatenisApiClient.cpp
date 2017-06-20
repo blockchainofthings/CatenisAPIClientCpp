@@ -81,6 +81,28 @@ bool ctn::CtnApiClient::retrieveMessageContainer(std::string message_id, std::st
     return httpRequest("GET", "messages/:messageId/container", params, queries, request_data, data);
 }
 
+bool ctn::CtnApiClient::listMessages(std::string &data, std::string action, std::string direction, std::string from_device_ids, std::string to_device_ids, std::string from_device_prod_ids, std::string to_device_prod_ids, std::string read_state, std::string start_date, std::string endDate)
+{
+    std::map<std::string, std::string> params;
+    std::map<std::string, std::string> queries;
+    boost::property_tree::ptree request_data;
+    
+    queries["action"] = action;
+    queries["direction"] = direction;
+    
+    if(from_device_ids != "") queries["fromDeviceIds"] = from_device_ids;
+    if(to_device_ids != "") queries["toDeviceIds"] = to_device_ids;
+    if(from_device_prod_ids != "") queries["fromDeviceProdUniqueIds"] = from_device_prod_ids;
+    if(to_device_prod_ids != "") queries["toDeviceProdUniqueIds"] = to_device_prod_ids;
+    
+    queries["readState"] = read_state;
+    
+    if(start_date != "") queries["startDate"] = start_date;
+    if(endDate != "") queries["endDate"] = endDate;
+    
+    return httpRequest("GET", "messages", params, queries, request_data, data);
+}
+
 // http request
 bool ctn::CtnApiClient::httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, std::string &response_data)
 {

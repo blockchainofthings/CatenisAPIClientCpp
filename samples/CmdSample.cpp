@@ -33,6 +33,7 @@ int main(int argc, char* argv[])
     cout << "    send <device_id>" << endl;
     cout << "    read <message_id>" << endl;
     cout << "    retrieve <message_id>" << endl;
+    cout << "    list" << endl;
     cout << endl;
     
     while(true)
@@ -73,6 +74,12 @@ int main(int argc, char* argv[])
             cin.ignore();
             
             client.retrieveMessageContainer(message_id, result);
+        }
+        else if(method == "list")
+        {
+            cin.ignore();
+            
+            client.listMessages(result);
         }
         else
         {
