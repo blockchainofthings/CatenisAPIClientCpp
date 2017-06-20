@@ -34,29 +34,29 @@ HunterGate(
 project(CatenisAPIClient)
 
 # build sample option
-option(build_samples "Build sample programs." ON)
+option(build_samples "Build sample programs." OFF)
 
 # Add directories 
 include_directories(src include)
 
-# Add components needed for Boost.asio: system, regex
-hunter_add_package(Boost COMPONENTS system regex)
-find_package(Boost CONFIG REQUIRED system regex)
+# Add components needed for Poco: Foundation, Net, JSON
+hunter_add_package(PocoCpp)
+find_package(Poco REQUIRED Foundation Net JSON CONFIG)
 
 # Add OpenSSl components: openssl, crypto
 hunter_add_package(OpenSSL)
 find_package(OpenSSL REQUIRED)
 
 # Link and make exe
-#add_executable(CatenisAPIClient src/CatenisApiClient.cpp include/CatenisApiClient.h)
-#target_link_libraries(CatenisAPIClient Boost::system Boost::regex OpenSSL::SSL OpenSSL::Crypto)
+add_executable(CatenisAPIClient src/CatenisApiClient.cpp include/CatenisApiClient.h)
+target_link_libraries(CatenisAPIClient Poco::Foundation Poco::Net Poco::JSON OpenSSL::SSL OpenSSL::Crypto)
 
 # Link and make lib
-add_library(CatenisAPIClient src/CatenisApiClient.cpp include/CatenisApiClient.h)
-target_link_libraries(CatenisAPIClient Boost::system Boost::regex OpenSSL::SSL OpenSSL::Crypto)
+#add_library(CatenisAPIClient src/CatenisApiClient.cpp include/CatenisApiClient.h)
+#target_link_libraries(CatenisAPIClient Poco::Foundation Poco::Net Poco::JSON OpenSSL::SSL OpenSSL::Crypto)
 
 # Build samples after the service apis
 # but keep them under src
-if (build_samples)
-  add_subdirectory(samples)
-endif()
+#if (build_samples)
+#  add_subdirectory(samples)
+#endif()

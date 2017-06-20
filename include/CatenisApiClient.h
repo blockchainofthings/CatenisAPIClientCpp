@@ -11,8 +11,7 @@
 #include <map>
 #include <ctime>
 
-#include <boost/asio.hpp>
-#include <boost/property_tree/ptree.hpp>
+#include <Poco/JSON/Object.h>
 
 // Version specific constants
 const std::string API_PATH = "/api/";
@@ -92,7 +91,7 @@ private:
     time_t last_signdate_;
     std::string last_signkey_;
     
-    bool httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, std::string &response_data);
+    bool httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, Poco::JSON::Object &request_data, std::string &response_data);
     
     void signRequest(std::string verb, std::string endpoint, std::map<std::string, std::string> &headers, std::string payload, time_t now);
     std::string hashData(const std::string str);

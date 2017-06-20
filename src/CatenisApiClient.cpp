@@ -18,24 +18,33 @@
 #include <openssl/sha.h>
 #include <openssl/hmac.h>
 #include <openssl/evp.h>
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/regex.hpp>
+#include <Poco/JSON/Object.h>
+#include <Poco/JSON/Stringifier.h>
 
-using boost::asio::ip::tcp;
+int main()
+{
+    ctn::CtnApiClient client("d4XwmaAyRJdSYp4CZuTA", "86ccbaeaff0e6fc9cff989dde3f1b2c2e92761202c40873b07166b7f20b4d7cb682be163305cae4a2f8df557536163416f539b2f6f17fb5f6a20e309fdbec9ce", "beta.catenis.io");
+    
+    std::string result;
+    client.sendMessage(ctn::Device("asd"), "asdf", result);
+    
+    return 0;
+}
+
 
 bool ctn::CtnApiClient::logMessage(std::string message, std::string &data, const MethodOption &option)
 {
     std::map<std::string, std::string> params;
     std::map<std::string, std::string> queries;
-    boost::property_tree::ptree request_data;
+    Poco::JSON::Object request_data;
     
     // write request body
-    request_data.put("message", message);
-    request_data.put("options.encoding", option.encoding);
-    request_data.put("options.encrypt", option.encrypt);
-    request_data.put("options.storage", option.storage);
+    request_data.set("message", message);
+    Poco::JSON::Object options;
+    options.set("encoding", option.encoding);
+    options.set("encrypt", option.encrypt);
+    options.set("storage", option.storage);
+    request_data.set("options", options);
     
     return httpRequest("POST", "messages/log", params, queries, request_data, data);
 }
@@ -44,16 +53,23 @@ bool ctn::CtnApiClient::sendMessage(const Device &device, std::string message, s
 {
     std::map<std::string, std::string> params;
     std::map<std::string, std::string> queries;
-    boost::property_tree::ptree request_data;
+    Poco::JSON::Object request_data;
     
     // write request body
-    request_data.put("targetDevice.id", device.id);
-    request_data.put("targetDevice.isProdUniqueId", device.is_prod_uniqueid);
-    request_data.put("options.encoding", option.encoding);
-    request_data.put("message", message);
-    request_data.put("options.encoding", option.encoding);
-    request_data.put("options.encrypt", option.encrypt);
-    request_data.put("options.storage", option.storage);
+    request_data.set("message", message);
+    Poco::JSON::Object targetD;
+    targetD.set("id", device.id);
+    targetD.set("isProdUniqueId", device.is_prod_uniqueid);
+    Poco::JSON::Object options;
+    options.set("encoding", option.encoding);
+    options.set("encrypt", option.encrypt);
+    options.set("storage", option.storage);
+    request_data.set("targetDevice", targetD);
+    request_data.set("options", options);
+
+    std::ostringstream oss;
+    Poco::JSON::Stringifier::stringify(request_data, oss );
+    std::cout << oss.str() << std::endl;
     
     return httpRequest("POST", "messages/send", params, queries, request_data, data);
 }
@@ -62,7 +78,7 @@ bool ctn::CtnApiClient::readMessage(std::string message_id, std::string &data, s
 {
     std::map<std::string, std::string> params;
     std::map<std::string, std::string> queries;
-    boost::property_tree::ptree request_data;
+    Poco::JSON::Object request_data;
     
     params[":messageId"] = message_id;
     queries["encoding"] = encoding;
@@ -74,7 +90,7 @@ bool ctn::CtnApiClient::retrieveMessageContainer(std::string message_id, std::st
 {
     std::map<std::string, std::string> params;
     std::map<std::string, std::string> queries;
-    boost::property_tree::ptree request_data;
+    Poco::JSON::Object request_data;
     
     params[":messageId"] = message_id;
     
@@ -85,7 +101,7 @@ bool ctn::CtnApiClient::listMessages(std::string &data, std::string action, std:
 {
     std::map<std::string, std::string> params;
     std::map<std::string, std::string> queries;
-    boost::property_tree::ptree request_data;
+    Poco::JSON::Object request_data;
     
     queries["action"] = action;
     queries["direction"] = direction;
@@ -104,8 +120,11 @@ bool ctn::CtnApiClient::listMessages(std::string &data, std::string action, std:
 }
 
 // http request
-bool ctn::CtnApiClient::httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, std::string &response_data)
+bool ctn::CtnApiClient::httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, Poco::JSON::Object &request_data, std::string &response_data)
 {
+    
+    return true;
+    /*
     bool success = true;
     
     // Add entire path
@@ -262,6 +281,8 @@ bool ctn::CtnApiClient::httpRequest(std::string verb, std::string methodpath, st
     else delete http_socket;
     
     return success;
+    
+    */
 }
 
 // Constructor
