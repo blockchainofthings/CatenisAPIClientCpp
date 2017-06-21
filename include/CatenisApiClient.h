@@ -8,24 +8,14 @@
 #define __CATENISAPICLIENT_H__
 
 #include <string>
-#include <map>
 #include <ctime>
 
-#include <boost/asio.hpp>
-#include <boost/property_tree/ptree.hpp>
-
 // Version specific constants
-const std::string API_PATH = "/api/";
-const std::string SIGN_VERSION_ID = "CTN1";
-const std::string SIGN_METHOD_ID = "CTN1-HMAC-SHA256";
-const std::string  SCOPE_REQUEST = "ctn1_request";
-const std::string TIME_STAMP_HDR = "x-bcot-timestamp";
-const std::string API_VERSION = "0.3";
-const int SIGN_VALID_DAYS = 7;
+const std::string DEFAULT_API_VERSION = "0.3";
 
 namespace ctn
 {
-
+    
 /*
  * Struct to contain options for main api calls
  *
@@ -74,30 +64,21 @@ struct Device
         this->is_prod_uniqueid = is_prod_uniqueid;
     }
 };
+    
+// Forward declare internals
+class CtnApiInternals;
 
 class CtnApiClient
 {
 
 private:
-
-    std::string device_id_;
-    std::string api_access_secret_;
-
-    std::string host_;
-    std::string subdomain_;
-    bool secure_;
-    std::string version_;
-
-    std::string root_api_endpoint_;
-    time_t last_signdate_;
-    std::string last_signkey_;
     
-    bool httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, std::string &response_data);
+    /* Pointer to object that handles all internal functionalities of CtnApiClient
+     *
+     * @see ctn::CtnApiInternals
+     */
+    CtnApiInternals *internals_;
     
-    void signRequest(std::string verb, std::string endpoint, std::map<std::string, std::string> &headers, std::string payload, time_t now);
-    std::string hashData(const std::string str);
-    std::string signData(const std::string key, const std::string data, bool hex_encode = false);
-
 public:
     
     /* Constructor
@@ -108,9 +89,12 @@ public:
      * @param[in] environment (optional, default: 'prod') :  Environment of target Catenis API server
      * ["prod"|"beta"]
      * @param[in] secure (optional, default: true) :  Indicates whether a secure connection (HTTPS) should be used
-     * @param[in] version (optional, default: API_VERSION) :  Version of Catenis API to target
+     * @param[in] version (optional, default: DEFAULT_API_VERSION) :  Version of Catenis API to target
      */
-     CtnApiClient(std::string device_id, std::string api_access_secret, std::string host = "catenis.io", std::string environment = "prod", bool secure = true, std::string version = API_VERSION);
+     CtnApiClient(std::string device_id, std::string api_access_secret, std::string host = "catenis.io", std::string environment = "prod", bool secure = true, std::string version = DEFAULT_API_VERSION);
+    
+    /* Destructor */
+    ~CtnApiClient();
     
     /*
      * Log a message

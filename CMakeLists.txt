@@ -36,8 +36,8 @@ project(CatenisAPIClient)
 # build sample option
 option(build_samples "Build sample programs." ON)
 
-# Add directories 
-include_directories(src include)
+# Add directories for including headers
+include_directories(include)
 
 # Add components needed for Boost.asio: system, regex
 hunter_add_package(Boost COMPONENTS system regex)
@@ -48,11 +48,11 @@ hunter_add_package(OpenSSL)
 find_package(OpenSSL REQUIRED)
 
 # Link and make exe
-#add_executable(CatenisAPIClient src/CatenisApiClient.cpp include/CatenisApiClient.h)
+#add_executable(CatenisAPIClient CatenisApiClient.cpp CatenisApiClient.h CatenisApiInternals.cpp CatenisApiInternals.h)
 #target_link_libraries(CatenisAPIClient Boost::system Boost::regex OpenSSL::SSL OpenSSL::Crypto)
 
 # Link and make lib
-add_library(CatenisAPIClient src/CatenisApiClient.cpp include/CatenisApiClient.h)
+add_library(CatenisAPIClient src/CatenisApiClient.cpp include/CatenisApiClient.h src/CatenisApiInternals.cpp include/CatenisApiInternals.h)
 target_link_libraries(CatenisAPIClient Boost::system Boost::regex OpenSSL::SSL OpenSSL::Crypto)
 
 # Build samples after the service apis
