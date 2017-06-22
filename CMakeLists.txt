@@ -1,24 +1,13 @@
-cmake_minimum_required(VERSION 3.5.0)
+cmake_minimum_required(VERSION 3.0.0)
 
 # Set compiler debug flags
-#set(CMAKE_C_FLAGS "-g -Wall")
-#set(CMAKE_CXX_FLAGS "-g -Wall")
+set(CMAKE_C_FLAGS "-g -Wall")
+set(CMAKE_CXX_FLAGS "-g -Wall")
 
 # Set c++11
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  # add clang specific flags
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-  # add GNU specific flags
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-  # add Intel specific flags
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-  set(CMAKE_CXX_FLAGS "/EHsc")
-  add_definitions(-DBOOST_ALL_NO_LIB=1)
-endif()
 
 # Silence linkage warnings
 set(CMAKE_SHARED_LINKER_FLAGS "-w")
@@ -32,6 +21,21 @@ HunterGate(
 )
 
 project(CatenisAPIClient)
+
+# Add compiler specific flags
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    # Clang
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    # GNU
+    # -pthread option needed for boost
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+    # intel
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    # MSVC
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
+    add_definitions(-DBOOST_ALL_NO_LIB=1)
+endif()
 
 # build sample option
 option(build_samples "Build sample programs." ON)
