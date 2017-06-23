@@ -71,10 +71,6 @@ bool ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
     // Create signature and add to header
     signRequest(verb, methodpath, headers, payload_json, now);
     
-    // Declare both socket type pointers to reuse code for ssl and http
-    tcp::socket *http_socket;
-    boost::asio::ssl::stream<tcp::socket> *ssl_socket;
-    
     // Set up TCP/IP connection with server and send request
     try
     {
@@ -86,26 +82,27 @@ bool ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
         tcp::resolver::query query(headers["host"], prefix);
         tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
         
+        // Declare and init both sockets, this is a fix due to boost.asio memory bug in windows
+        // HTTPS
+        boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
+        boost::asio::ssl::stream<tcp::socket> ssl_socket(io_service, ctx);
+        // http
+        tcp::socket http_socket(io_service);
+        
         if(this->secure_)
         {
-            // HTTPS
-            // Create context
-            boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
-            ssl_socket = new boost::asio::ssl::stream<tcp::socket>(io_service, ctx);
-            
             // Try each endpoint until successful connection
-            boost::asio::connect(ssl_socket->lowest_layer(), endpoint_iterator);
+            boost::asio::connect(ssl_socket.lowest_layer(), endpoint_iterator);
             
             // Handshake with server
-            ssl_socket->set_verify_mode(boost::asio::ssl::verify_none);
-            ssl_socket->handshake(boost::asio::ssl::stream_base::handshake_type::client);
+            ssl_socket.set_verify_mode(boost::asio::ssl::verify_none);
+            ssl_socket.handshake(boost::asio::ssl::stream_base::handshake_type::client);
         }
         else
         {
             // HTTP
             // Try each endpoint until we successfully establish a connection
-            http_socket = new tcp::socket(io_service);
-            boost::asio::connect(*http_socket, endpoint_iterator);
+            boost::asio::connect(http_socket, endpoint_iterator);
         }
         
         // Form the request
@@ -132,14 +129,14 @@ bool ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
         request_stream << payload_json;
         
         // Send the request
-        if(this->secure_) boost::asio::write(*ssl_socket, request);
-        else boost::asio::write(*http_socket, request);
+        if(this->secure_) boost::asio::write(ssl_socket, request);
+        else boost::asio::write(http_socket, request);
         
         // Check that response is OK.
         boost::asio::streambuf response_buf;
         boost::system::error_code error;
-        if(this->secure_) boost::asio::read_until(*ssl_socket, response_buf, "\r\n");
-        else boost::asio::read_until(*http_socket, response_buf, "\r\n");
+        if(this->secure_) boost::asio::read_until(ssl_socket, response_buf, "\r\n");
+        else boost::asio::read_until(http_socket, response_buf, "\r\n");
         std::istream response_stream(&response_buf);
         
         std::string http_version;
@@ -161,13 +158,13 @@ bool ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
         
         // Read all headers and flush buffer
         int headerSize;
-        if(this->secure_) headerSize = boost::asio::read_until(*ssl_socket, response_buf, "\r\n\r\n");
-        else headerSize = boost::asio::read_until(*http_socket, response_buf, "\r\n\r\n");
+        if(this->secure_) headerSize = boost::asio::read_until(ssl_socket, response_buf, "\r\n\r\n");
+        else headerSize = boost::asio::read_until(http_socket, response_buf, "\r\n\r\n");
         response_buf.consume(headerSize);
         
         // Read until EOF or Short read,
-        if(this->secure_) boost::asio::read(*ssl_socket, response_buf, boost::asio::transfer_all(), error);
-        else boost::asio::read(*http_socket, response_buf, boost::asio::transfer_all(), error);
+        if(this->secure_) boost::asio::read(ssl_socket, response_buf, boost::asio::transfer_all(), error);
+        else boost::asio::read(http_socket, response_buf, boost::asio::transfer_all(), error);
         if (error != boost::asio::error::eof && error !=  boost::system::error_code(ERR_PACK(ERR_LIB_SSL, 0, SSL_R_SHORT_READ), boost::asio::error::get_ssl_category()))
             throw boost::system::system_error(error);
         
@@ -179,10 +176,6 @@ bool ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
         std::cout << "Exception: " << e.what() << "\n";
         success = false;
     }
-    
-    // clean memory
-    if(this->secure_) delete ssl_socket;
-    else delete http_socket;
     
     return success;
 }
@@ -254,7 +247,6 @@ ctn::CtnApiInternals::CtnApiInternals(std::string device_id, std::string api_acc
     
     this->root_api_endpoint_ = API_PATH + this->version_;
 }
-
 
 // SHA256 Hash
 std::string ctn::CtnApiInternals::hashData(const std::string str)
