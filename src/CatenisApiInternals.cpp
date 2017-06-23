@@ -282,7 +282,7 @@ std::string ctn::CtnApiInternals::signData(std::string key, std::string data, bo
     
     if(hex_encode == false)
     {
-        ss << raw;
+        return std::string((char *)raw, (std::string::size_type)len);
     }
     else
     {
