@@ -97,10 +97,10 @@ bool ctn::CtnApiClient::listMessages(std::string &data, std::string action, std:
 }
 
 // CtnApiClient Constructor
-ctn::CtnApiClient::CtnApiClient(std::string device_id, std::string api_access_secret, std::string host, std::string environment, bool secure, std::string version)
+ctn::CtnApiClient::CtnApiClient(std::string device_id, std::string api_access_secret, std::string host, std::string port, std::string environment, bool secure, std::string version)
 {
     // Init internals and pass param
-    this->internals_ = new ctn::CtnApiInternals(device_id, api_access_secret, host, environment, secure, version);
+    this->internals_ = new ctn::CtnApiInternals(device_id, api_access_secret, host, port, environment, secure, version);
 }
 
 // CtnApiClient Destructor

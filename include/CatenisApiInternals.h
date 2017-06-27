@@ -41,6 +41,7 @@ private:
     std::string api_access_secret_;
     
     std::string host_;
+    std::string port_;
     std::string subdomain_;
     bool secure_;
     std::string version_;
@@ -55,7 +56,7 @@ private:
     
 public:
     
-    CtnApiInternals(std::string device_id, std::string api_access_secret, std::string host, std::string environment, bool secure, std::string version);
+    CtnApiInternals(std::string device_id, std::string api_access_secret, std::string host, std::string port, std::string environment, bool secure, std::string version);
     bool httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, std::string &response_data);
 };
 

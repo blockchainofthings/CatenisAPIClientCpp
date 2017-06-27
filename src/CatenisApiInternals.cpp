@@ -80,6 +80,7 @@ bool ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
         boost::asio::io_service io_service;
         tcp::resolver resolver(io_service);
         tcp::resolver::query query(headers["host"], prefix);
+        if(this->port_ != "") query = tcp::resolver::query(headers["host"], this->port_);
         tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
         
         // Declare and init both sockets, this is a fix due to boost.asio memory bug in windows
@@ -180,7 +181,7 @@ bool ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
     return success;
 }
 
-// Generate Signature
+// Generate Signature and add to request
 void ctn::CtnApiInternals::signRequest(std::string verb, std::string endpoint, std::map<std::string, std::string> &headers, std::string payload, time_t now)
 {
     std::string timestamp = headers[TIME_STAMP_HDR];
@@ -235,12 +236,13 @@ void ctn::CtnApiInternals::signRequest(std::string verb, std::string endpoint, s
 }
 
 //Contructor
-ctn::CtnApiInternals::CtnApiInternals(std::string device_id, std::string api_access_secret, std::string host, std::string environment, bool secure, std::string version)
+ctn::CtnApiInternals::CtnApiInternals(std::string device_id, std::string api_access_secret, std::string host, std::string port, std::string environment, bool secure, std::string version)
 {
     this->device_id_ = device_id;
     this->api_access_secret_ = api_access_secret;
     
     this->host_ = host;
+    this->port_ = port;
     this->subdomain_ = environment;
     this->secure_ = secure;
     this->version_ = version;

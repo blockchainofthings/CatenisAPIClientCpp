@@ -85,13 +85,14 @@ public:
      *
      * @param[in] device_id : Catenis device ID
      * @param[in] api_access_secret : Catenis device's API access secret
-     * @param[in] host (optional, default: catenis.io) :  Host name (with optional port) of target Catenis API server
-     * @param[in] environment (optional, default: 'prod') :  Environment of target Catenis API server
+     * @param[in] host (optional, default: catenis.io) :  Host name of target Catenis API server
+     * @param[in] port (optional, default: "") : Port of target to connect
+     * @param[in] environment (optional, default: "prod") :  Environment of target Catenis API server
      * ["prod"|"beta"]
      * @param[in] secure (optional, default: true) :  Indicates whether a secure connection (HTTPS) should be used
      * @param[in] version (optional, default: DEFAULT_API_VERSION) :  Version of Catenis API to target
      */
-     CtnApiClient(std::string device_id, std::string api_access_secret, std::string host = "catenis.io", std::string environment = "prod", bool secure = true, std::string version = DEFAULT_API_VERSION);
+    CtnApiClient(std::string device_id, std::string api_access_secret, std::string host = "catenis.io", std::string port = "",std::string environment = "prod", bool secure = true, std::string version = DEFAULT_API_VERSION);
     
     /* Destructor */
     ~CtnApiClient();
