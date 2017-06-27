@@ -43,9 +43,9 @@ option(BUILD_SAMPLES "Build sample programs.")
 # Add directories for including headers
 include_directories(include)
 
-# Add components needed for Boost.asio: system, regex
-hunter_add_package(Boost COMPONENTS system regex)
-find_package(Boost CONFIG REQUIRED system regex)
+# Add components needed for Poco: Foundation, Net, JSON
+hunter_add_package(PocoCpp)
+find_package(Poco REQUIRED Foundation Net JSON CONFIG)
 
 # Add OpenSSl components: openssl, crypto
 hunter_add_package(OpenSSL)
@@ -57,7 +57,7 @@ find_package(OpenSSL REQUIRED)
 
 # Link and make lib
 add_library(CatenisAPIClient src/CatenisApiClient.cpp include/CatenisApiClient.h src/CatenisApiInternals.cpp include/CatenisApiInternals.h)
-target_link_libraries(CatenisAPIClient Boost::system Boost::regex OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(CatenisAPIClient Poco::Foundation Poco::Net Poco::JSON OpenSSL::SSL OpenSSL::Crypto)
 
 # Build samples if added flag added
 message(STATUS "BUILD_SAMPLES : " ${BUILD_SAMPLES})

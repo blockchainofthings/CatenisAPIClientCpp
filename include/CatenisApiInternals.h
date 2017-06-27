@@ -18,15 +18,13 @@ const std::string  SCOPE_REQUEST = "ctn1_request";
 const std::string TIME_STAMP_HDR = "x-bcot-timestamp";
 const int SIGN_VALID_DAYS = 7;
 
-// Forward declare boost ptree
-namespace boost
+// Forward declare Poco JSON object
+namespace Poco
 {
-namespace property_tree
+namespace JSON
 {
     
-template < class Key, class Data, class KeyCompare >
-class basic_ptree;
-typedef basic_ptree< std::string, std::string, std::less<std::string> > ptree;
+class Object;
     
 }
 }
@@ -57,7 +55,7 @@ private:
 public:
     
     CtnApiInternals(std::string device_id, std::string api_access_secret, std::string host, std::string port, std::string environment, bool secure, std::string version);
-    bool httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, std::string &response_data);
+    bool httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, Poco::JSON::Object &request_data, std::string &response_data);
 };
 
 }

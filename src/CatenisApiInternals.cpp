@@ -18,17 +18,23 @@
 #include <openssl/sha.h>
 #include <openssl/hmac.h>
 #include <openssl/evp.h>
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/regex.hpp>
-
-using boost::asio::ip::tcp;
+#include <Poco/JSON/Object.h>
+#include <Poco/JSON/Stringifier.h>
 
 // http request
-bool ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, std::string &response_data)
+bool ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, Poco::JSON::Object &request_data, std::string &response_data)
 {
+    std::cout << "http Request called!\n";
+    
+    if(verb == "POST")
+    {
+        std::ostringstream oss;
+        Poco::JSON::Stringifier::stringify(request_data, oss);
+        std::cout << oss.str() << std::endl;
+    }
+    
+    return true;
+    /*
     bool success = true;
     
     // Add entire path
@@ -178,7 +184,7 @@ bool ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
         success = false;
     }
     
-    return success;
+    return success;*/
 }
 
 // Generate Signature and add to request

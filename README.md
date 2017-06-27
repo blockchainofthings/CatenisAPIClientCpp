@@ -1,11 +1,11 @@
-# Catenis API C++ Client
+# Catenis API C++ Client: Poco
 This library lets C++ developers access the Catenis API services with ease. The current installation has been tested on Mac, Linux, and Windows systems.
 
 ## Available Branches
 1. boostAsio : Uses the Boost.Asio network library to call API methods.
     - Recommended for projects that require low level I/O programming 
     (More flexibility but complicated)
-2. poco : Uses the Poco network library to call API methods. **(Under Development in master branch)**
+2. poco : Uses the Poco network library to call API methods. **(Currently Under Development)**
     - Recommended for normal projects that only uses the standard functionalities of the Catenis API Methods 
     (More reliable and easy to use)re low level I/O programming (More flexibility but complicated)
 
