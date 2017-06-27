@@ -2,7 +2,7 @@
 //  CatenisApiInternals.cpp
 //  CatenisAPIClientCpp
 //
-//  Created by BaeSungwoo on 6/21/17.
+//  Created by Sungwoo Bae on 6/21/17.
 //
 
 #include <CatenisApiInternals.h>
