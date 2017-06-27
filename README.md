@@ -38,6 +38,15 @@ cmake --build _builds --config Release
 
 All build files will be located in the _builds directory.
 
+#### Building Sample Programs:
+
+A command line sample program is located within the samples folder. To build this with the library, issue a command similar to the previous one but with the BUILD_SAMPLES flag.
+
+```shell
+cmake -H. -B_builds -DHUNTER_STATUS_DEBUG=ON -DCMAKE_BUILD_TYPE=Release -DBUILD_SAMPLES=ON
+cmake --build _builds --config Release
+```
+
 ## Contributers
 
 Sungwoo Bae - sungwoo@blockchainofthings.com || sungwoo.bae@columbia.edu
