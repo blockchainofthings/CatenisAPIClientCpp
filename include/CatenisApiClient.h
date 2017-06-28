@@ -55,12 +55,12 @@ struct MethodOption
  */
 struct Device
 {
-    std::string id;
+    std::string device_id;
     bool is_prod_uniqueid;
     
-    Device(std::string id, bool is_prod_uniqueid = false)
+    Device(std::string device_id, bool is_prod_uniqueid = false)
     {
-        this->id = id;
+        this->device_id = device_id;
         this->is_prod_uniqueid = is_prod_uniqueid;
     }
 };

@@ -41,7 +41,7 @@ bool ctn::CtnApiClient::sendMessage(const Device &device, std::string message, s
     // write request body
     request_data.set("message", message);
     Poco::JSON::Object targetD;
-    targetD.set("id", device.id);
+    targetD.set("id", device.device_id);
     targetD.set("isProdUniqueId", device.is_prod_uniqueid);
     Poco::JSON::Object options;
     options.set("encoding", option.encoding);
