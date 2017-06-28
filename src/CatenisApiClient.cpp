@@ -37,7 +37,7 @@ bool ctn::CtnApiClient::sendMessage(const Device &device, std::string message, s
     boost::property_tree::ptree request_data;
     
     // write request body
-    request_data.put("targetDevice.id", device.id);
+    request_data.put("targetDevice.id", device.device_id);
     request_data.put("targetDevice.isProdUniqueId", device.is_prod_uniqueid);
     request_data.put("options.encoding", option.encoding);
     request_data.put("message", message);
