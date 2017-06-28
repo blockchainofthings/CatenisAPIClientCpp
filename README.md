@@ -60,7 +60,7 @@ Please read into the header file for more detailed usage information.
 ### Instantiate the client
 
 ```shell
-ctn::CtnApiClient ctnApiClient(device_id, api_access_secret, host, port, environment, secure, version);
+ctn::CtnApiClient ctnApiClient(device_id, api_access_secret, "catenis.io", "", "beta");
 ```
 
 ### Set method options and declare response data
@@ -72,7 +72,7 @@ std::string response_data; // this is where the http response will be stored
 
 ### Logging (storing) a message to the blockchain
 
-Use a pre-created method option.
+Use the pre-created method option.
 
 ```shell
 ctnApiClient.logMessage(message, response_data, options);
@@ -112,7 +112,7 @@ ctnApiClient.retrieveMessageContainer(message_id, response_data);
 ### List messages
 
 ```shell
-listMessages(response_data, "send", "inbound");
+ctnApiClient.listMessages(response_data);
 ```
 
 ## License
