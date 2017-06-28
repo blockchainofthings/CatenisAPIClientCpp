@@ -20,25 +20,22 @@
 #include <openssl/evp.h>
 #include <Poco/JSON/Object.h>
 #include <Poco/JSON/Stringifier.h>
+#include <Poco/Net/HTTPClientSession.h>
+#include <Poco/Net/HTTPRequest.h>
+#include <Poco/Net/HTTPResponse.h>
+#include <Poco/StreamCopier.h>
+#include <Poco/Path.h>
+#include <Poco/URI.h>
+#include <Poco/Exception.h>
+
+#include <Poco/Net/HTTPSClientSession.h>
+#include <Poco/Net/Context.h>
+
 
 // http request
 bool ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, Poco::JSON::Object &request_data, std::string &response_data)
 {
-    std::cout << "http Request called!\n";
-    
-    if(verb == "POST")
-    {
-        std::ostringstream oss;
-        Poco::JSON::Stringifier::stringify(request_data, oss);
-        std::cout << oss.str() << std::endl;
-    }
-    
-    return true;
-    /*
     bool success = true;
-    
-    // Add entire path
-    methodpath = this->root_api_endpoint_ + "/" + methodpath;
     
     // Process methodpath from params and queries
     for(auto const &data : params)
@@ -53,6 +50,27 @@ bool ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
         methodpath += data.first + "=" + data.second;
     }
     
+    // Add entire method path
+    methodpath = this->root_api_endpoint_ + "/" + methodpath;
+    
+    // Contruct url
+    std::string url = "";
+    std::string prefix = (this->secure_ ? "https://" : "http://");
+    url = prefix + this->host_;
+    if(this->port_ != "") url = url + ":" + this->port_;
+    url = url + methodpath;
+    
+    // Contruct Request JSON if POST
+    std::string payload_json = "";
+    if(verb == "POST")
+    {
+        std::ostringstream oss;
+        Poco::JSON::Stringifier::stringify(request_data, oss);
+        payload_json = oss.str();
+    }
+    
+    std::cout << payload_json << std::endl;
+    
     // Create neccesary headers
     time_t now = std::time(0);
     char iso_time[17];
@@ -62,129 +80,60 @@ bool ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
     headers["host"] = this->host_;
     headers[TIME_STAMP_HDR] = std::string(iso_time);
     
-    std::string payload_json = "";
-    // if POST, process payload
-    if(verb == "POST")
-    {
-        std::ostringstream payload_buf;
-        write_json (payload_buf, request_data, false);
-        
-        // fix boost.ptree bug where it treats all types as string
-        boost::regex exp("\"(null|true|false|[0-9]+(\\.[0-9]+)?)\"");
-        payload_json = boost::regex_replace(payload_buf.str(), exp, "$1");
-    }
-    
     // Create signature and add to header
     signRequest(verb, methodpath, headers, payload_json, now);
     
-    // Set up TCP/IP connection with server and send request
     try
     {
-        std::string prefix = (this->secure_ ? "https" : "http");
-        
-        // Get a list of endpoints corresponding to the server name
-        boost::asio::io_service io_service;
-        tcp::resolver resolver(io_service);
-        tcp::resolver::query query(headers["host"], prefix);
-        if(this->port_ != "") query = tcp::resolver::query(headers["host"], this->port_);
-        tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
-        
-        // Declare and init both sockets, this is a fix due to boost.asio memory bug in windows
+        Poco::URI uri(url);
+        // HTTP
+        Poco::Net::HTTPClientSession http_session(uri.getHost(), uri.getPort());
         // HTTPS
-        boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
-        boost::asio::ssl::stream<tcp::socket> ssl_socket(io_service, ctx);
-        // http
-        tcp::socket http_socket(io_service);
+        const Poco::Net::Context::Ptr context = new Poco::Net::Context(Poco::Net::Context::CLIENT_USE, "", "", "", Poco::Net::Context::VERIFY_NONE, 9, false, "ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH");
+        Poco::Net::HTTPSClientSession ssl_session(uri.getHost(), uri.getPort(), context);
         
-        if(this->secure_)
-        {
-            // Try each endpoint until successful connection
-            boost::asio::connect(ssl_socket.lowest_layer(), endpoint_iterator);
-            
-            // Handshake with server
-            ssl_socket.set_verify_mode(boost::asio::ssl::verify_none);
-            ssl_socket.handshake(boost::asio::ssl::stream_base::handshake_type::client);
-        }
-        else
-        {
-            // HTTP
-            // Try each endpoint until we successfully establish a connection
-            boost::asio::connect(http_socket, endpoint_iterator);
-        }
+        // Prepare path
+        std::string path(uri.getPathAndQuery());
+        if (path.empty()) path = "/";
         
-        // Form the request
-        boost::asio::streambuf request;
-        std::ostream request_stream(&request);
-        
-        // Use HTTP 1.0 for now, since persistent connections not needed yet
-        request_stream << verb << " " << methodpath << " HTTP/1.0\r\n";
+        // Make request and add header
+        Poco::Net::HTTPRequest request(verb, path, Poco::Net::HTTPMessage::HTTP_1_1);
         for(auto const &data : headers)
         {
-            request_stream << data.first << ": " << data.second << "\r\n";
+            request.add(data.first, data.second);
         }
-        // Add extra headers if POST
-        if(verb == "POST")
-        {
-            request_stream << "Content-Type: application/json; charset=utf-8\r\n";
-            request_stream << "Content-Length: " << payload_json.length() << "\r\n";
-        }
+        request.setKeepAlive(true);
         
-        // "Connection: close" header so that the server will close the socket after transmitting the response
-        request_stream << "Connection: close\r\n\r\n";
+        // Send Request
+        request.setContentLength(payload_json.length());
+        if(this->secure_) ssl_session.sendRequest(request) << payload_json;
+        else http_session.sendRequest(request) << payload_json;
         
-        // add payload
-        request_stream << payload_json;
+        request.write(std::cout);
         
-        // Send the request
-        if(this->secure_) boost::asio::write(ssl_socket, request);
-        else boost::asio::write(http_socket, request);
+        // Get response
+        Poco::Net::HTTPResponse res;
+        std::string responseStr;
+        if(this->secure_) Poco::StreamCopier::copyToString(ssl_session.receiveResponse(res), responseStr);
+        else Poco::StreamCopier::copyToString(http_session.receiveResponse(res), responseStr);
         
-        // Check that response is OK.
-        boost::asio::streambuf response_buf;
-        boost::system::error_code error;
-        if(this->secure_) boost::asio::read_until(ssl_socket, response_buf, "\r\n");
-        else boost::asio::read_until(http_socket, response_buf, "\r\n");
-        std::istream response_stream(&response_buf);
-        
-        std::string http_version;
-        response_stream >> http_version;
-        unsigned int status_code;
-        response_stream >> status_code;
-        std::string status_message;
-        std::getline(response_stream, status_message);
-        if (!response_stream || http_version.substr(0, 5) != "HTTP/")
-        {
-            std::cout << "Invalid response\n";
-            success = false;
-        }
+        unsigned int status_code = res.getStatus();
         if (status_code != 200)
         {
-            std::cout << "Response returned with status code " << status_code << "\n";
+            std::cerr << "Error: " << status_code << " ";
+            std::cerr << res.getReason() << std::endl;
             success = false;
         }
         
-        // Read all headers and flush buffer
-        int headerSize;
-        if(this->secure_) headerSize = boost::asio::read_until(ssl_socket, response_buf, "\r\n\r\n");
-        else headerSize = boost::asio::read_until(http_socket, response_buf, "\r\n\r\n");
-        response_buf.consume(headerSize);
-        
-        // Read until EOF or Short read,
-        if(this->secure_) boost::asio::read(ssl_socket, response_buf, boost::asio::transfer_all(), error);
-        else boost::asio::read(http_socket, response_buf, boost::asio::transfer_all(), error);
-        if (error != boost::asio::error::eof && error !=  boost::system::error_code(ERR_PACK(ERR_LIB_SSL, 0, SSL_R_SHORT_READ), boost::asio::error::get_ssl_category()))
-            throw boost::system::system_error(error);
-        
-        // Write response data
-        response_data = std::string(std::istreambuf_iterator<char>(response_stream), std::istreambuf_iterator<char>());
+        response_data = responseStr;
     }
-    catch (std::exception& e)
+    catch (Poco::Exception &ex)
     {
-        std::cout << "Exception: " << e.what() << "\n";
         success = false;
+        std::cerr << ex.displayText() << std::endl;
     }
     
-    return success;*/
+    return success;
 }
 
 // Generate Signature and add to request

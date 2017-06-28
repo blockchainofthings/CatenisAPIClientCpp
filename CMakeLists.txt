@@ -45,7 +45,7 @@ include_directories(include)
 
 # Add components needed for Poco: Foundation, Net, JSON
 hunter_add_package(PocoCpp)
-find_package(Poco REQUIRED Foundation Net JSON CONFIG)
+find_package(Poco REQUIRED Foundation Net JSON NetSSL CONFIG)
 
 # Add OpenSSl components: openssl, crypto
 hunter_add_package(OpenSSL)
@@ -57,7 +57,7 @@ find_package(OpenSSL REQUIRED)
 
 # Link and make lib
 add_library(CatenisAPIClient src/CatenisApiClient.cpp include/CatenisApiClient.h src/CatenisApiInternals.cpp include/CatenisApiInternals.h)
-target_link_libraries(CatenisAPIClient Poco::Foundation Poco::Net Poco::JSON OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(CatenisAPIClient Poco::Foundation Poco::Net Poco::JSON Poco::NetSSL OpenSSL::SSL OpenSSL::Crypto)
 
 # Build samples if added flag added
 message(STATUS "BUILD_SAMPLES : " ${BUILD_SAMPLES})
