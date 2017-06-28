@@ -14,7 +14,7 @@ This library lets C++ developers access the Catenis API services with ease. The 
 ### Prerequisites:
 
 * CMake (Available from https://cmake.org/download/)
-    - Verified with versions 3.0.0 and up
+    - Required versions 3.0.0 and up
 * C++ compiler
     - Mac OSX https://developer.apple.com/xcode/
         - Must install Xcode command line tools afterwards by running
@@ -25,6 +25,13 @@ This library lets C++ developers access the Catenis API services with ease. The 
     - Windows https://www.visualstudio.com/vs/community/
 * Perl (Available from https://www.perl.org/get.html)
     - Perl is needed for building the OpenSSL library
+
+### Setting External Library Directory:
+
+This library uses the C++ package manager [Hunter](https://github.com/ruslo/hunter) to download and build required external libraries. 
+You may set the environment variable HUNTER_ROOT to direct where the external libraries will be downloaded.
+If not specified, the external libraries will be downloaded in ~/.hunter
+* If the directory is specified, the path MUST NOT have spaces.
 
 ### Build Steps:
 
@@ -81,20 +88,20 @@ ctnApiClient.logMessage(message, response_data, options);
 Or contruct one within the method call.
 
 ```shell
-ctnApiClient.logMessage(message, response_data, methodOption("utf8", true, "auto"));
+ctnApiClient.logMessage(message, response_data, ctn::MethodOption("utf8", true, "auto"));
 ```
 
 ### Sending a message to another device
 
 ```shell
-ctn::Device device(device_id, is_prod_uniqueid);
+ctn::Device device(device_id, false);
 ctnApiClient.sendMessage(device, message, response_data, options);
 ```
 
 You may also contruct the device within the method call.
 
 ```shell
-ctnApiClient.sendMessage(ctn::Device(device_id, is_prod_uniqueid), message, response_data, options);
+ctnApiClient.sendMessage(ctn::Device(device_id), message, response_data, options);
 ```
 
 ### Reading a message
