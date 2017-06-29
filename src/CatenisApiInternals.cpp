@@ -4,7 +4,6 @@
 //
 //  Created by Sungwoo Bae on 6/21/17.
 //
-
 #include <CatenisApiInternals.h>
 
 #include <iostream>
@@ -85,7 +84,7 @@ bool ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
         // HTTP
         Poco::Net::HTTPClientSession http_session(uri.getHost(), uri.getPort());
         // HTTPS
-        const Poco::Net::Context::Ptr context = new Poco::Net::Context(Poco::Net::Context::CLIENT_USE, "", "", "", Poco::Net::Context::VERIFY_NONE, 9, false, "ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH");
+        const Poco::Net::Context::Ptr context = new Poco::Net::Context(Poco::Net::Context::CLIENT_USE, "", Poco::Net::Context::VERIFY_NONE);
         Poco::Net::HTTPSClientSession ssl_session(uri.getHost(), uri.getPort(), context);
         
         // Prepare path

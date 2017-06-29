@@ -59,6 +59,11 @@ find_package(OpenSSL REQUIRED)
 add_library(CatenisAPIClient src/CatenisApiClient.cpp include/CatenisApiClient.h src/CatenisApiInternals.cpp include/CatenisApiInternals.h)
 target_link_libraries(CatenisAPIClient Poco::Foundation Poco::Net Poco::JSON Poco::NetSSL OpenSSL::SSL OpenSSL::Crypto)
 
+# Add os specific libs
+if(WIN32)
+  target_link_libraries(CatenisAPIClient crypt32)
+endif()
+
 # Build samples if added flag added
 message(STATUS "BUILD_SAMPLES : " ${BUILD_SAMPLES})
 if (BUILD_SAMPLES)
