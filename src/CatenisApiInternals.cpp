@@ -27,10 +27,8 @@
 #include <Poco/Path.h>
 #include <Poco/URI.h>
 #include <Poco/Exception.h>
-
 #include <Poco/Net/HTTPSClientSession.h>
 #include <Poco/Net/Context.h>
-
 
 // http request
 bool ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, Poco::JSON::Object &request_data, std::string &response_data)
@@ -60,7 +58,7 @@ bool ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
     if(this->port_ != "") url = url + ":" + this->port_;
     url = url + methodpath;
     
-    // Contruct Request JSON if POST
+    // Contruct Request body if POST
     std::string payload_json = "";
     if(verb == "POST")
     {
@@ -68,9 +66,7 @@ bool ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
         Poco::JSON::Stringifier::stringify(request_data, oss);
         payload_json = oss.str();
     }
-    
-    std::cout << payload_json << std::endl;
-    
+        
     // Create neccesary headers
     time_t now = std::time(0);
     char iso_time[17];
@@ -102,20 +98,17 @@ bool ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
         {
             request.add(data.first, data.second);
         }
-        request.setKeepAlive(true);
+        request.setContentType("application/json; charset=utf-8");
+        request.setContentLength(payload_json.length());
         
         // Send Request
-        request.setContentLength(payload_json.length());
         if(this->secure_) ssl_session.sendRequest(request) << payload_json;
         else http_session.sendRequest(request) << payload_json;
         
-        request.write(std::cout);
-        
-        // Get response
+        // Get response and copy to response_data
         Poco::Net::HTTPResponse res;
-        std::string responseStr;
-        if(this->secure_) Poco::StreamCopier::copyToString(ssl_session.receiveResponse(res), responseStr);
-        else Poco::StreamCopier::copyToString(http_session.receiveResponse(res), responseStr);
+        if(this->secure_) Poco::StreamCopier::copyToString(ssl_session.receiveResponse(res), response_data);
+        else Poco::StreamCopier::copyToString(http_session.receiveResponse(res), response_data);
         
         unsigned int status_code = res.getStatus();
         if (status_code != 200)
@@ -124,8 +117,6 @@ bool ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
             std::cerr << res.getReason() << std::endl;
             success = false;
         }
-        
-        response_data = responseStr;
     }
     catch (Poco::Exception &ex)
     {
