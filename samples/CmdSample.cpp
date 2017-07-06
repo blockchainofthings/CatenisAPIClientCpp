@@ -5,7 +5,7 @@
 //  Created by Sungwoo Bae on 6/15/17.
 //
 
-#include <CatenisApiClient.h>
+#include "CatenisApiClient.h"
 
 #include <iostream>
 #include <string>
