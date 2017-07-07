@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0)
+﻿cmake_minimum_required(VERSION 3.0.0)
 
 # Set compiler debug flags
 set(CMAKE_C_FLAGS "-g -Wall")
@@ -70,8 +70,12 @@ if(WIN32)
 endif()
 
 # fix cmake generator bug, kinda hacky since static, will fix later
-set(tempCatenis_loc "${CMAKE_CURRENT_BINARY_DIR}/libtempCatenis.a")
-set(catenic_loc "${CMAKE_CURRENT_BINARY_DIR}/libCatenisAPIClient.a")
+if(NOT WIN32)
+  set(tempCatenis_loc "${CMAKE_CURRENT_BINARY_DIR}/libtempCatenis.a")
+  set(catenic_loc "${CMAKE_CURRENT_BINARY_DIR}/libCatenisAPIClient.a")
+else()
+  set(tempCatenis_loc "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/tempCatenis.lib")
+endif()
 
 # Merge all libs into one lib
 merge_static_libs(CatenisAPIClient tempCatenis Poco::Foundation Poco::Net Poco::JSON Poco::NetSSL Poco::XML Poco::Util Poco::Crypto OpenSSL::SSL OpenSSL::Crypto)
@@ -82,7 +86,15 @@ if (BUILD_SAMPLES)
   add_subdirectory(samples)
 endif()
 
-# Delete temp lib CatenisAPIClient_temp after build
-add_custom_command(TARGET CatenisAPIClient POST_BUILD
-    COMMAND rm $<TARGET_FILE:tempCatenis>
+# Delete temp lib tempCatenis after build
+if(WIN32)
+  # have to use del command, and turn slash into backslash
+  string(REGEX REPLACE "/" "\\\\" tempCatenis_loc ${tempCatenis_loc})
+  add_custom_command(TARGET CatenisAPIClient POST_BUILD 
+  COMMAND del ${tempCatenis_loc}
 )
+else()
+  add_custom_command(TARGET CatenisAPIClient POST_BUILD
+  COMMAND rm ${tempCatenis_loc}
+)
+endif()
