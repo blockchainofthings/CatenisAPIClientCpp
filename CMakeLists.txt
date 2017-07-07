@@ -63,16 +63,17 @@ find_package(OpenSSL REQUIRED)
 add_library(tempCatenis src/CatenisApiClient.cpp include/CatenisApiClient.h src/CatenisApiInternals.cpp include/CatenisApiInternals.h)
 target_link_libraries(tempCatenis Boost::system Boost::regex OpenSSL::SSL OpenSSL::Crypto)
 
-# fix cmake generator bug, kinda hacky since static, will fix later
-if(NOT WIN32)
+# fix cmake generator bug, kinda hacky since static, will fix later if needed
+if(WIN32)
+  set(tempCatenis_loc "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/tempCatenis.lib")
+else()
   set(tempCatenis_loc "${CMAKE_CURRENT_BINARY_DIR}/libtempCatenis.a")
   set(catenic_loc "${CMAKE_CURRENT_BINARY_DIR}/libCatenisAPIClient.a")
-else()
-  set(tempCatenis_loc "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/tempCatenis.lib")
 endif()
 
-# Merge all libs into one lib
+# Merge all libs into one lib (the first lib added has to be the lib created: tempCatenis)
 merge_static_libs(CatenisAPIClient tempCatenis Boost::system Boost::regex OpenSSL::SSL OpenSSL::Crypto)
+
 
 # Build samples if added flag added
 message(STATUS "BUILD_SAMPLES : " ${BUILD_SAMPLES})
