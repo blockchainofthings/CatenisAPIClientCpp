@@ -24,7 +24,7 @@ This library lets C++ developers access the Catenis API services with ease. The 
     - Linux   http://gcc.gnu.org/
     - Windows https://www.visualstudio.com/vs/community/
 * Perl (Available from https://www.perl.org/get.html)
-    - Perl is needed for building the OpenSSL library
+    - Perl is needed on WINDOWS for building the OpenSSL library
 
 ### Setting External Library Directory:
 
@@ -56,13 +56,20 @@ cmake --build _builds --config Release
 
 ## Usage
 
-Link the built static library and include the header.
+### Link the library
+
+A static library file CatenisAPIClient will be in the _builds directory. Link the library with your source code and include the header.
 
 ```shell
-#include <CatenisApiClient.h>
+#include "CatenisApiClient.h"
 ```
 
-Please read into the header file for more detailed usage information.
+* Linux
+    - Linking the library on Linux will need additional linker flags. 
+        + -pthread 
+        + -ldl
+
+Please read into the header file for more detailed usage information on the library.
 
 ### Instantiate the client
 
