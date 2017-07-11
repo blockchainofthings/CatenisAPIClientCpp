@@ -7,13 +7,6 @@
 #ifndef __CATENISAPIINTERNALS_H__
 #define __CATENISAPIINTERNALS_H__
 
-// add libs for windows
-#ifdef _WIN32
-#pragma comment(lib, "crypt32.lib")
-#pragma comment(lib, "ws2_32.lib") 
-#pragma comment(lib, "iphlpapi.lib")
-#endif
-
 #include <map>
 #include <string>
 
