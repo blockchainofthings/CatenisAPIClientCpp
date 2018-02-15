@@ -22,7 +22,7 @@ include("cmake/HunterGate.cmake")
 HunterGate(
     URL "https://github.com/ruslo/hunter/archive/v0.19.7.tar.gz"
     SHA1 "e83786da74f703099fce44a4c021b5d3e5fc3b41"
-    FILEPATH "cmake/config.cmake"
+    FILEPATH "${CMAKE_SOURCE_DIR}/cmake/config.cmake"
 )
 
 # Final stand-alone lib file
