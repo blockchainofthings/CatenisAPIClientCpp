@@ -5,6 +5,7 @@
 //  Created by Sungwoo Bae on 6/15/17.
 //
 
+#include "CatenisApiException.h"
 #include "CatenisApiClient.h"
 
 #include <iostream>
@@ -15,6 +16,8 @@ using std::cin;
 using std::cout;
 using std::endl;
 using std::string;
+
+using namespace ctn;
 
 int main(int argc, char* argv[])
 {
@@ -44,42 +47,129 @@ int main(int argc, char* argv[])
         cout << "> ";
         cin >> method;
         
-        if(method == "log")
+        if (method == "log")
         {
             cin.ignore();
             cout << "enter message: ";
             std::getline(cin, message);
             
-            client.logMessage(message, result);
+            try
+            {
+                LogMessageResult data;
+                client.logMessage(data, message);
+                std::cout << data.messageId << std::endl;
+            }
+            catch(CatenisAPIClientError *errObject)
+            {
+                std::cerr << errObject->getErrorDescription() << std::endl;
+                delete errObject;
+            }
+            catch(...)
+            {
+                std::cerr << "Unknown error encountered: call to client.logMessage." << std::endl;
+            }
         }
-        else if(method == "send")
+        else if (method == "send")
         {
             cin >> device_id;
             cin.ignore();
             cout << "enter message: ";
             std::getline(cin, message);
             
-            client.sendMessage(ctn::Device(device_id), message, result);
+            try
+            {
+                SendMessageResult data;
+                client.sendMessage(data, ctn::Device(device_id), message); 
+                std::cout << data.messageId << std::endl;
+            }
+            catch(CatenisAPIClientError *errObject)
+            {
+                std::cerr << errObject->getErrorDescription() << std::endl;
+                delete errObject;
+            }
+            catch(...)
+            {
+                std::cerr << "Unknown error encountered: call to client.sendMessage." << std::endl;
+            }
         }
-        else if(method == "read")
+        else if (method == "read")
         {
             cin >> message_id;
             cin.ignore();
             
-            client.readMessage(message_id, result);
+            try
+            {
+                ReadMessageResult data;
+                client.readMessage(data, message_id);
+                std::cout << data.message << std::endl;
+            }
+            catch(CatenisAPIClientError *errObject)
+            {
+                std::cerr << errObject->getErrorDescription() << std::endl;
+                delete errObject;
+            }
+            catch(...)
+            {
+                std::cerr << "Unknown error encountered: call to client.readMessage." << std::endl;
+            }
         }
-        else if(method == "retrieve")
+        else if (method == "retrieve")
         {
             cin >> message_id;
             cin.ignore();
             
-            client.retrieveMessageContainer(message_id, result);
+            try
+            {
+                RetrieveMessageContainerResult data;
+                client.retrieveMessageContainer(data, message_id);
+                std::cout << data.txid << std::endl;
+            }
+            catch(CatenisAPIClientError *errObject)
+            {
+                std::cerr << errObject->getErrorDescription() << std::endl;
+                delete errObject;
+            }
+            catch(...)
+            {
+                std::cerr << "Unknown error encountered: call to client.retrieveMessage." << std::endl;
+            }
         }
-        else if(method == "list")
+        else if (method == "list")
         {
             cin.ignore();
             
-            client.listMessages(result);
+            try
+            {
+                ListMessagesResult data;
+                client.listMessages(data);
+                for (MessageDescription *msgD : data.messageList) 
+                {
+                     std::cout << "--------------------------------Message";
+                     std::cout << "--------------------------------" << endl;
+                     std::cout << "MessageId\t\t\t: " << msgD->messageId << endl;
+                     std::cout << "Action\t\t\t\t: " << msgD->action << endl;
+                     std::cout << "Read\t\t\t\t: " << msgD->read << endl;
+                     std::cout << "Date\t\t\t\t: " << msgD->date << endl;
+                     std::cout << "FromDeviceId\t\t\t: " << msgD->fromDeviceId << endl;
+                     std::cout << "FromName\t\t\t: " << msgD->fromName << endl;
+                     std::cout << "FromProdUniqueId\t\t: " << msgD->fromProdUniqueId << endl;
+                     std::cout << "ToDeviceId\t\t\t: " << msgD->toDeviceId << endl;
+                     std::cout << "ToName\t\t\t\t: " << msgD->toName << endl;
+                     std::cout << "ToProdUniqueId\t\t\t: " << msgD->toProdUniqueId << endl;
+                     std::cout << "ReadConfirmationEnabled\t\t: " << msgD->readConfirmationEnabled << endl;
+                } 
+                std::cout << "MsgCount\t\t\t: " << data.msgCount << std::endl;
+                std::cout << "CountExceeded\t\t\t: " << data.countExceeded << std::endl;
+            }
+            catch(CatenisAPIClientError *errObject)
+            {
+                std::cerr << errObject->getErrorDescription() << std::endl;
+                delete errObject;
+            }
+            catch(...)
+            {
+                std::cerr << "Unknown error encountered: call to client.listMessage." << std::endl;
+            }
         }
         else
         {

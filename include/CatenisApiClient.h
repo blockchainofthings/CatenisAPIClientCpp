@@ -3,12 +3,15 @@
 //  CatenisAPIClientCpp
 //
 //  Created by Sungwoo Bae on 5/25/17.
+//  Modifications by R. Benson Evans on 2/20/2018.
 //
 #ifndef __CATENISAPICLIENT_H__
 #define __CATENISAPICLIENT_H__
 
 #include <string>
 #include <ctime>
+
+#include <list>
 
 // Version specific constants
 const std::string DEFAULT_API_VERSION = "0.3";
@@ -64,7 +67,115 @@ struct Device
         this->is_prod_uniqueid = is_prod_uniqueid;
     }
 };
-    
+
+/*
+ * Struct to contain the returned data.
+ *
+ * @member messageId : ID of logged message.
+ */
+struct LogMessageResult
+{
+	std::string messageId;
+};
+
+/*
+ * Struct to contain the returned data.
+ *
+ * @member messageId : ID of sent message.
+ */
+struct SendMessageResult
+{
+	std::string messageId;
+};
+
+/*
+ * Struct to contain the returned data.
+ *
+ * @member action : the action performed on the message: 'log' or 'send'.
+ * @member fromDeviceId : Catenis ID of the sending device.
+ * @member fromName : Device name.
+ * @member fromProdUniqueId : Product unique ID.
+ * @member toDeviceId : Catenis ID of the target device.
+ * @member toName : Device name.
+ * @member toProdUniqueId : Product unique ID.
+ * @member message : the message read.
+ */
+struct ReadMessageResult
+{
+	std::string action;
+	std::string fromDeviceId;
+	std::string fromName;
+	std::string fromProdUniqueId;
+	std::string toDeviceId;
+	std::string toName;
+	std::string toProdUniqueId;
+	std::string message;
+};
+
+/*
+ * Struct to contain the returned data.
+ *
+ * @member txid : ID of blockchain transaction where messae is recorded.
+ * @member isConfirmed : Indicates where the returned txid is confirmed.
+ * @member externalStorage : [optional] only returned if message is stored in an external storage.
+ * @member storageProviderName : Key: storage provider name.
+ */
+struct RetrieveMessageContainerResult
+{
+	std::string txid;
+	std::string isConfirmed;
+	std::string externalStorage; // optional.
+	std::string storageProviderName;
+};
+
+
+/*
+ * Struct to contain the returned data.
+ *
+ * @member messageId : ID of message.
+ * @member action : Action performed: 'log' or 'send'.
+ * @member direction : Direction of 'send' message: 'inbound' or 'outbound'.
+ * @member fromDeviceId : Catenis ID of the sending device.
+ * @member fromName : Device name.
+ * @member fromProdUniqueId : Product unique ID.
+ * @member toDeviceId : Catenis ID of the target device.
+ * @member toName : Device name.
+ * @member toProdUniqueId : Product unique ID.
+ * @member readConfirmationEnabled : Indicates whether the message had been sent with read confirmation enabled.
+ * @member read : Indicates whether the message had already been read.
+ * @member date : ISO 8601 formatted date and time when message was logged, sent or received.
+ */
+struct MessageDescription
+{
+    std::string messageId;
+    std::string action;
+    std::string direction;
+	std::string fromDeviceId;
+	std::string fromName;
+	std::string fromProdUniqueId;
+	std::string toDeviceId;
+	std::string toName;
+	std::string toProdUniqueId;
+    std::string readConfirmationEnabled;
+    std::string read;
+    std::string date;
+};
+
+/*
+ * Struct to contain the returned data.
+ *
+ * @member messageList : List of structures.
+ * @member msgCount : Number of messages for which information is returned.
+ * @member countExceeded : Was the actual number of messages greater than the max returnable.
+ */
+struct ListMessagesResult
+{
+    std::list< MessageDescription * > messageList; 
+	std::string msgCount;
+	std::string countExceeded;
+};
+
+
 // Forward declare internals
 class CtnApiInternals;
 
@@ -100,52 +211,60 @@ public:
     /*
      * Log a message
      *
-     * @param[in] message : The messsage to store
      * @param[out] data : The data to parse response into
+     * @param[in] message : The messsage to store
      * @param[in] option (optional) :  Options to log message
      *
      * @return true if no error has occured.
      *
+     * @see ctn::LogMessageResult
      * @see ctn::MethodOption
      */
-    bool logMessage(std::string message, std::string &data, const MethodOption &option = MethodOption());
+    void logMessage(LogMessageResult &data, std::string message, const MethodOption &option = MethodOption());
     
     /*
      * Send a message
      *
+     * @param[out] data : The data to parse response into
      * @param[in] device : Device that receives message
      * @param[in] message : The messsage to send
-     * @param[out] data : The data to parse response into
      * @param[in] option (optional) :  Options to send message
      *
      * @return true if no error has occured.
      *
+     * @see ctn::SendMessageResult
      * @see ctn::Device
      * @see ctn::MethodOption
      */
-    bool sendMessage(const Device &device, std::string message, std::string &data, const MethodOption &option = MethodOption());
+    void sendMessage(SendMessageResult &data, const Device &device, std::string message, const MethodOption &option = MethodOption());
     
     /*
      * Read a message
      *
-     * @param[in] message_id : ID of message to read
      * @param[out] data : The data to parse response into
+     * @param[in] message_id : ID of message to read
      * @param[in] encoding (optional, default: "utf8") :  The encoding that should be used for the returned message
      * ["utf8"|"base64"|"hex"]
      *
      * @return true if no error has occured.
+     *
+     * @see ctn::ReadMessageResult
+     *
      */
-    bool readMessage(std::string message_id, std::string &data, std::string encoding = "utf8");
+    void readMessage(ReadMessageResult &data, std::string message_id, std::string encoding = "utf8");
     
     /*
      * Retrieve message container
      *
-     * @param[in] message_id : ID of message to retrieve container info
      * @param[out] data : The data to parse response into
+     * @param[in] message_id : ID of message to retrieve container info
      *
      * @return true if no error has occured.
+     *
+     * @see ctn::RetrieveMessageContainer
+     *
      */
-    bool retrieveMessageContainer(std::string message_id, std::string &data);
+    void retrieveMessageContainer(RetrieveMessageContainerResult &data, std::string message_id);
     
     /*
      * Retrieves a list of message entries filtered by a given criteria
@@ -165,9 +284,25 @@ public:
      * @param[in] end_date (optional) : ISO 8601 formatted date and time specifying the upper boundary
      *
      * @return true if no error has occured.
+     *
+     * @see ctn::ListMessagesResult
+     *
      */
-    bool listMessages(std::string &data, std::string action = "any", std::string direction = "any", std::string from_device_ids = "", std::string to_device_ids = "", std::string from_device_prod_ids = "", std::string to_device_prod_ids = "", std::string read_state = "any", std::string start_date = "", std::string endDate = "");
+    void listMessages(ListMessagesResult &data, std::string action = "any", std::string direction = "any", std::string from_device_ids = "", std::string to_device_ids = "", std::string from_device_prod_ids = "", std::string to_device_prod_ids = "", std::string read_state = "any", std::string start_date = "", std::string endDate = "");
     
+
+    /*
+     * Parse the server returned data and return it or throw CatenisAPIClientError.
+     *
+     * @param[out] userReturnData: The data object returned to the calling function.
+     * @param[in] json_data: The data object returned from the server. 
+     *
+     */
+    void parseLogMessage(LogMessageResult &user_return_data, std::string json_data);
+    void parseSendMessage(SendMessageResult &user_return_data, std::string json_data);
+    void parseReadMessage(ReadMessageResult &user_return_data, std::string json_data);
+    void parseRetrieveMessageContainer(RetrieveMessageContainerResult &user_return_data, std::string json_data);
+    void parseListMessages(ListMessagesResult &user_return_data, std::string json_data);
 };
 
 }
