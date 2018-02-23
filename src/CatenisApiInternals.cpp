@@ -5,6 +5,7 @@
 //  Created by Sungwoo Bae on 6/21/17.
 //
 
+#include <CatenisApiException.h>
 #include <CatenisApiInternals.h>
 
 #include <iostream>
@@ -27,10 +28,8 @@
 using boost::asio::ip::tcp;
 
 // http request
-bool ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, std::string &response_data)
+void ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, std::string &response_data)
 {
-    bool success = true;
-    
     // Add entire path
     methodpath = this->root_api_endpoint_ + "/" + methodpath;
     
@@ -140,21 +139,33 @@ bool ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
         else boost::asio::read_until(http_socket, response_buf, "\r\n");
         std::istream response_stream(&response_buf);
         
+        // Check the stream at each point.
         std::string http_version;
-        response_stream >> http_version;
-        unsigned int status_code;
-        response_stream >> status_code;
+        if (response_stream) 
+            response_stream >> http_version;
+        else
+            throw(new CatenisAPIClientError("Connection/stream error encountered", false, -1));
+
+        int status_code;
+        if (response_stream) 
+            response_stream >> status_code;
+        else
+            throw(new CatenisAPIClientError("Connection/stream error encountered", false, -1));
+
         std::string status_message;
-        std::getline(response_stream, status_message);
+        if (response_stream) std::getline(response_stream, status_message);
+
+        // (Benson) Revisit!! is it necessary to test the state of the stream here.
         if (!response_stream || http_version.substr(0, 5) != "HTTP/")
         {
             std::cout << "Invalid response\n";
-            success = false;
+            throw(new CatenisAPIClientError("Connection/stream error encountered", false, status_code));
         }
+
         if (status_code != 200)
         {
             std::cout << "Response returned with status code " << status_code << "\n";
-            success = false;
+            throw(new CatenisAPIClientError(status_message, false, status_code));
         }
         
         // Read all headers and flush buffer
@@ -175,10 +186,8 @@ bool ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
     catch (std::exception& e)
     {
         std::cout << "Exception: " << e.what() << "\n";
-        success = false;
+        throw(new CatenisAPIClientError(e.what(), false, 0)); // re-throw; possibly broken pipe.
     }
-    
-    return success;
 }
 
 // Generate Signature and add to request
