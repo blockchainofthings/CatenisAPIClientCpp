@@ -33,7 +33,7 @@ class CatenisAPIException
             return("Client Error: " + errorMessage + ".");
 
         std::ostringstream oss; 
-        oss << std::string("Error Message: ") << errorMessage << "; Http status code: " << httpStatusCode << ".";
+        oss << "Error Message: " << errorMessage << "; Http status code: " << httpStatusCode << ".";
         return(oss.str());
     }
 

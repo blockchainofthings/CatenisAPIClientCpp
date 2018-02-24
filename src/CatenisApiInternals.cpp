@@ -140,33 +140,26 @@ void ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
         std::istream response_stream(&response_buf);
         
         // Check the stream at each point.
-        std::string http_version;
-        if (response_stream) 
-            response_stream >> http_version;
-        else
+        if (!response_stream) 
             throw(new CatenisAPIClientError("Connection/stream error encountered", false, -1));
+
+        std::string http_version;
+        response_stream >> http_version;
+        if (http_version.substr(0, 5) != "HTTP/")
+            throw(new CatenisAPIClientError("Connected to a non-HTTP server", false, -1));
 
         int status_code;
-        if (response_stream) 
-            response_stream >> status_code;
-        else
+        if (!response_stream) 
             throw(new CatenisAPIClientError("Connection/stream error encountered", false, -1));
+        response_stream >> status_code;
 
         std::string status_message;
-        if (response_stream) std::getline(response_stream, status_message);
-
-        // (Benson) Revisit!! is it necessary to test the state of the stream here.
-        if (!response_stream || http_version.substr(0, 5) != "HTTP/")
-        {
-            std::cout << "Invalid response\n";
+        if (!response_stream) 
             throw(new CatenisAPIClientError("Connection/stream error encountered", false, status_code));
-        }
+        std::getline(response_stream, status_message, '\r');  // "protocol string ends with \r\n".
 
         if (status_code != 200)
-        {
-            std::cout << "Response returned with status code " << status_code << "\n";
             throw(new CatenisAPIClientError(status_message, false, status_code));
-        }
         
         // Read all headers and flush buffer
         int headerSize;
@@ -185,7 +178,6 @@ void ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
     }
     catch (std::exception& e)
     {
-        std::cout << "Exception: " << e.what() << "\n";
         throw(new CatenisAPIClientError(e.what(), false, 0)); // re-throw; possibly broken pipe.
     }
 }
