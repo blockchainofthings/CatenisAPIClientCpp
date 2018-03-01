@@ -10,7 +10,6 @@
 
 #include <string>
 #include <ctime>
-
 #include <list>
 
 // Version specific constants
@@ -28,21 +27,21 @@ namespace ctn
  * @member storage : Value identifying where the message should be stored
  * [“auto"|"embedded"|"external"]
  */
-struct MethodOption
+struct MessageOptions
 {
     std::string encoding;
     bool encrypt;
     std::string storage;
     
     // Default contructor with default values for members
-    MethodOption()
+    MessageOptions()
     {
         encoding = "utf8";
         encrypt = true;
         storage = "auto";
     }
 
-    MethodOption(std::string encoding, bool encrypt, std::string storage)
+    MessageOptions(std::string encoding, bool encrypt, std::string storage)
     {
         this->encoding = encoding;
         this->encrypt = encrypt;
@@ -88,44 +87,70 @@ struct SendMessageResult
 	std::string messageId;
 };
 
+
 /*
  * Struct to contain the returned data.
  *
- * @member action : the action performed on the message: 'log' or 'send'.
- * @member fromDeviceId : Catenis ID of the sending device.
- * @member fromName : Device name.
- * @member fromProdUniqueId : Product unique ID.
- * @member toDeviceId : Catenis ID of the target device.
- * @member toName : Device name.
- * @member toProdUniqueId : Product unique ID.
- * @member message : the message read.
+ * @member deviceId : Catenis ID of the sending device.
+ * @member name : Device name.
+ * @member prodUniqueId : Product unique ID.
  */
-struct ReadMessageResult
+
+struct DeviceInfo
 {
-	std::string action;
-	std::string fromDeviceId;
-	std::string fromName;
-	std::string fromProdUniqueId;
-	std::string toDeviceId;
-	std::string toName;
-	std::string toProdUniqueId;
-	std::string message;
+    std::string deviceId;
+    std::string name;
+    std::string prodUniqueId;
+
+    DeviceInfo(std::string device_id, std::string device_name, std::string prod_unique_id)
+        : deviceId(device_id), name(device_name), prodUniqueId(prod_unique_id) {}
+    ~DeviceInfo() {}
 };
 
 /*
  * Struct to contain the returned data.
  *
- * @member txid : ID of blockchain transaction where messae is recorded.
- * @member isConfirmed : Indicates where the returned txid is confirmed.
+ * @member action : the action performed on the message: 'log' or 'send'.
+ * @member from : Catenis ID/Name/ProdUniqueId of the sending device.
+ * @member to : Catenis ID/Name/ProdUniqueId of the target device.
+ * @member message : the message read.
+ */
+struct ReadMessageResult
+{
+	std::string action;
+    std::shared_ptr<DeviceInfo> from;
+    std::shared_ptr<DeviceInfo> to;
+	std::string message;
+};
+
+
+/*
+ * Struct to contain the returned data.
+ *
+ * @member txid : TXID of blockchain transaction where message is recorded.
+ * @member isConfirmed : Indicates whether the returned txid is confirmed.
+ */
+struct TransactionInfo
+{
+    std::string txid;
+    bool isConfirmed;
+};
+
+// optional: storageProviderName, externalStorage
+typedef std::map<std::string, std::string> StorageProvidedDictionary;
+
+/*
+ * Struct to contain the returned data.
+ *
+ * @member blockchain: TXID of blockchain transaction where the message is recorded.
  * @member externalStorage : [optional] only returned if message is stored in an external storage.
  * @member storageProviderName : Key: storage provider name.
  */
+
 struct RetrieveMessageContainerResult
 {
-	std::string txid;
-	std::string isConfirmed;
-	std::string externalStorage; // optional.
-	std::string storageProviderName;
+    TransactionInfo blockchain;
+    std::shared_ptr<StorageProvidedDictionary> externalStorage;
 };
 
 
@@ -135,13 +160,9 @@ struct RetrieveMessageContainerResult
  * @member messageId : ID of message.
  * @member action : Action performed: 'log' or 'send'.
  * @member direction : Direction of 'send' message: 'inbound' or 'outbound'.
- * @member fromDeviceId : Catenis ID of the sending device.
- * @member fromName : Device name.
- * @member fromProdUniqueId : Product unique ID.
- * @member toDeviceId : Catenis ID of the target device.
- * @member toName : Device name.
- * @member toProdUniqueId : Product unique ID.
- * @member readConfirmationEnabled : Indicates whether the message had been sent with read confirmation enabled.
+ * @member from : Catenis ID/Name/ProdUniqueId of the sending device.
+ * @member to : Catenis ID/Name/ProdUniqueId of the target device.
+ * @member readConfirmationEnabled : Indicates whether the message had been sent with read-confirmation enabled.
  * @member read : Indicates whether the message had already been read.
  * @member date : ISO 8601 formatted date and time when message was logged, sent or received.
  */
@@ -150,15 +171,18 @@ struct MessageDescription
     std::string messageId;
     std::string action;
     std::string direction;
-	std::string fromDeviceId;
-	std::string fromName;
-	std::string fromProdUniqueId;
-	std::string toDeviceId;
-	std::string toName;
-	std::string toProdUniqueId;
+    std::shared_ptr<DeviceInfo> from;
+    std::shared_ptr<DeviceInfo> to;
     std::string readConfirmationEnabled;
     std::string read;
     std::string date;
+
+    MessageDescription(std::string message_id, std::string action_arg, std::string direction_arg, 
+        std::shared_ptr<DeviceInfo> from_arg, std::shared_ptr<DeviceInfo> to_arg,
+        std::string read_confirmation_enabled, std::string read_arg, std::string date_arg)
+    : messageId(message_id), action(action_arg), direction(direction_arg), from(from_arg), to(to_arg),
+        readConfirmationEnabled(read_confirmation_enabled), read(read_arg), date(date_arg) {}
+    ~MessageDescription() {}
 };
 
 /*
@@ -170,7 +194,7 @@ struct MessageDescription
  */
 struct ListMessagesResult
 {
-    std::list< MessageDescription * > messageList; 
+    std::list< std::shared_ptr<MessageDescription> > messageList; 
 	std::string msgCount;
 	std::string countExceeded;
 };
@@ -218,9 +242,9 @@ public:
      * @return true if no error has occured.
      *
      * @see ctn::LogMessageResult
-     * @see ctn::MethodOption
+     * @see ctn::MessageOptions
      */
-    void logMessage(LogMessageResult &data, std::string message, const MethodOption &option = MethodOption());
+    void logMessage(LogMessageResult &data, std::string message, const MessageOptions &option = MessageOptions());
     
     /*
      * Send a message
@@ -234,9 +258,9 @@ public:
      *
      * @see ctn::SendMessageResult
      * @see ctn::Device
-     * @see ctn::MethodOption
+     * @see ctn::MessageOptions
      */
-    void sendMessage(SendMessageResult &data, const Device &device, std::string message, const MethodOption &option = MethodOption());
+    void sendMessage(SendMessageResult &data, const Device &device, std::string message, const MessageOptions &option = MessageOptions());
     
     /*
      * Read a message
@@ -289,20 +313,7 @@ public:
      *
      */
     void listMessages(ListMessagesResult &data, std::string action = "any", std::string direction = "any", std::string from_device_ids = "", std::string to_device_ids = "", std::string from_device_prod_ids = "", std::string to_device_prod_ids = "", std::string read_state = "any", std::string start_date = "", std::string endDate = "");
-    
 
-    /*
-     * Parse the server returned data and return it or throw CatenisAPIClientError.
-     *
-     * @param[out] userReturnData: The data object returned to the calling function.
-     * @param[in] json_data: The data object returned from the server. 
-     *
-     */
-    void parseLogMessage(LogMessageResult &user_return_data, std::string json_data);
-    void parseSendMessage(SendMessageResult &user_return_data, std::string json_data);
-    void parseReadMessage(ReadMessageResult &user_return_data, std::string json_data);
-    void parseRetrieveMessageContainer(RetrieveMessageContainerResult &user_return_data, std::string json_data);
-    void parseListMessages(ListMessagesResult &user_return_data, std::string json_data);
 };
 
 }

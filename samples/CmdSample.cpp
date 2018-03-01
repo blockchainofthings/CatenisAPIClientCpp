@@ -5,12 +5,13 @@
 //  Created by Sungwoo Bae on 6/15/17.
 //
 
-#include "CatenisApiException.h"
-#include "CatenisApiClient.h"
 
 #include <iostream>
 #include <string>
 #include <vector>
+
+#include <CatenisApiException.h>
+#include <CatenisApiClient.h>
 
 using std::cin;
 using std::cout;
@@ -59,7 +60,7 @@ int main(int argc, char* argv[])
                 client.logMessage(data, message);
                 std::cout << data.messageId << std::endl;
             }
-            catch(CatenisAPIClientError *errObject)
+            catch(CatenisAPIException *errObject)
             {
                 std::cerr << errObject->getErrorDescription() << std::endl;
                 delete errObject;
@@ -82,7 +83,7 @@ int main(int argc, char* argv[])
                 client.sendMessage(data, ctn::Device(device_id), message); 
                 std::cout << data.messageId << std::endl;
             }
-            catch(CatenisAPIClientError *errObject)
+            catch(CatenisAPIException *errObject)
             {
                 std::cerr << errObject->getErrorDescription() << std::endl;
                 delete errObject;
@@ -103,7 +104,7 @@ int main(int argc, char* argv[])
                 client.readMessage(data, message_id);
                 std::cout << data.message << std::endl;
             }
-            catch(CatenisAPIClientError *errObject)
+            catch(CatenisAPIException *errObject)
             {
                 std::cerr << errObject->getErrorDescription() << std::endl;
                 delete errObject;
@@ -122,9 +123,20 @@ int main(int argc, char* argv[])
             {
                 RetrieveMessageContainerResult data;
                 client.retrieveMessageContainer(data, message_id);
-                std::cout << data.txid << std::endl;
+                std::cout << "txid :" << data.blockchain.txid << std::endl;
+                std::string val = data.blockchain.isConfirmed ? "true" : "false";
+                std::cout << "isConfirmed :" << val << std::endl;
+
+                if (data.externalStorage != nullptr)
+                {
+                    std::map<std::string, std::string>::iterator it = (*data.externalStorage).begin();
+                    for (; it != (*data.externalStorage).end(); it++)
+                    {
+                        cout << "Key : (" << it->first << ") Value : (" << it->second << ")" << std::endl;
+                    }
+                }
             }
-            catch(CatenisAPIClientError *errObject)
+            catch(CatenisAPIException *errObject)
             {
                 std::cerr << errObject->getErrorDescription() << std::endl;
                 delete errObject;
@@ -142,26 +154,37 @@ int main(int argc, char* argv[])
             {
                 ListMessagesResult data;
                 client.listMessages(data);
-                for (MessageDescription *msgD : data.messageList) 
+
+                std::list<std::shared_ptr<MessageDescription>>::iterator it = data.messageList.begin();
+                for (; it != data.messageList.end(); it++)
                 {
+                     MessageDescription msgD = *(*it);
                      std::cout << "--------------------------------Message";
                      std::cout << "--------------------------------" << endl;
-                     std::cout << "MessageId\t\t\t: " << msgD->messageId << endl;
-                     std::cout << "Action\t\t\t\t: " << msgD->action << endl;
-                     std::cout << "Read\t\t\t\t: " << msgD->read << endl;
-                     std::cout << "Date\t\t\t\t: " << msgD->date << endl;
-                     std::cout << "FromDeviceId\t\t\t: " << msgD->fromDeviceId << endl;
-                     std::cout << "FromName\t\t\t: " << msgD->fromName << endl;
-                     std::cout << "FromProdUniqueId\t\t: " << msgD->fromProdUniqueId << endl;
-                     std::cout << "ToDeviceId\t\t\t: " << msgD->toDeviceId << endl;
-                     std::cout << "ToName\t\t\t\t: " << msgD->toName << endl;
-                     std::cout << "ToProdUniqueId\t\t\t: " << msgD->toProdUniqueId << endl;
-                     std::cout << "ReadConfirmationEnabled\t\t: " << msgD->readConfirmationEnabled << endl;
+                     std::cout << "MessageId\t\t\t: " << msgD.messageId << endl;
+                     std::cout << "Action\t\t\t\t: " << msgD.action << endl;
+                     std::cout << "Read\t\t\t\t: " << msgD.read << endl;
+                     std::cout << "Direction\t\t\t: " << msgD.direction << endl;
+                     std::cout << "Date\t\t\t\t: " << msgD.date << endl;
+
+                     if (msgD.from != nullptr)
+                     {
+                          std::cout << "FromDeviceId\t\t\t: " << (*msgD.from).deviceId << endl;
+                          std::cout << "FromName\t\t\t: " << (*msgD.from).name << endl;
+                          std::cout << "FromProdUniqueId\t\t: " << (*msgD.from).prodUniqueId << endl;
+                     }
+                     if (msgD.to != nullptr)
+                     {
+                          std::cout << "ToDeviceId\t\t\t: " << (*msgD.to).deviceId << endl;
+                          std::cout << "ToName\t\t\t\t: " << (*msgD.to).name << endl;
+                          std::cout << "ToProdUniqueId\t\t\t: " << (*msgD.to).prodUniqueId << endl;
+                     }
+                     std::cout << "ReadConfirmationEnabled\t\t: " << msgD.readConfirmationEnabled << endl;
                 } 
                 std::cout << "MsgCount\t\t\t: " << data.msgCount << std::endl;
                 std::cout << "CountExceeded\t\t\t: " << data.countExceeded << std::endl;
             }
-            catch(CatenisAPIClientError *errObject)
+            catch(CatenisAPIException *errObject)
             {
                 std::cerr << errObject->getErrorDescription() << std::endl;
                 delete errObject;
