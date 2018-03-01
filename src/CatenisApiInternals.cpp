@@ -3,11 +3,11 @@
 //  CatenisAPIClientCpp
 //
 //  Created by Sungwoo Bae on 6/21/17.
+//  Modifications by R. Benson Evans on 2/20/2018.
 //
 
-#include <CatenisApiException.h>
-#include <CatenisApiInternals.h>
 
+#include <utility>
 #include <iostream>
 #include <string>
 #include <ctime>
@@ -15,6 +15,8 @@
 #include <sstream>
 #include <stdio.h>
 #include <iomanip>
+#include <list>
+#include <memory>
 
 #include <openssl/sha.h>
 #include <openssl/hmac.h>
@@ -25,7 +27,14 @@
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/regex.hpp>
 
+#include <boost/foreach.hpp>
+
+using boost::property_tree::ptree;
+using boost::property_tree::read_json;
 using boost::asio::ip::tcp;
+
+#include <CatenisApiException.h>
+#include <CatenisApiInternals.h>
 
 // http request
 void ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, std::string &response_data)
@@ -141,25 +150,22 @@ void ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
         
         // Check the stream at each point.
         if (!response_stream) 
-            throw(new CatenisAPIClientError("Connection/stream error encountered", false, -1));
+            throw(new CatenisClientError("Connection/stream error encountered"));
 
         std::string http_version;
         response_stream >> http_version;
         if (http_version.substr(0, 5) != "HTTP/")
-            throw(new CatenisAPIClientError("Connected to a non-HTTP server", false, -1));
+            throw(new CatenisClientError("Connected to a non-HTTP server"));
 
         int status_code;
         if (!response_stream) 
-            throw(new CatenisAPIClientError("Connection/stream error encountered", false, -1));
+            throw(new CatenisClientError("Connection/stream error encountered"));
         response_stream >> status_code;
 
         std::string status_message;
         if (!response_stream) 
-            throw(new CatenisAPIClientError("Connection/stream error encountered", false, status_code));
+            throw(new CatenisClientError("Connection/stream error encountered"));
         std::getline(response_stream, status_message, '\r');  // "protocol string ends with \r\n".
-
-        if (status_code != 200)
-            throw(new CatenisAPIClientError(status_message, false, status_code));
         
         // Read all headers and flush buffer
         int headerSize;
@@ -175,10 +181,18 @@ void ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
         
         // Write response data
         response_data = std::string(std::istreambuf_iterator<char>(response_stream), std::istreambuf_iterator<char>());
+
+#if 1
+        std::cerr << "DEBUG STATUS LINE: (" << status_code << "-" << status_message << ")" << std::endl; 
+        std::cerr << "DEBUG HTTP_RESPONSE: (" << response_data << ")" << std::endl; 
+#endif 
+
+        if (status_code != 200)
+            throw(new CatenisAPIError(status_message, status_code, response_data));
     }
     catch (std::exception& e)
     {
-        throw(new CatenisAPIClientError(e.what(), false, 0)); // re-throw; possibly broken pipe.
+        throw(new CatenisClientError(e.what()));
     }
 }
 
@@ -292,3 +306,242 @@ std::string ctn::CtnApiInternals::signData(std::string key, std::string data, bo
     }
     return ss.str();
 }
+
+
+// Private Method.
+void ctn::CtnApiInternals::parseLogMessage(LogMessageResult &user_return_data, std::string json_data)
+{
+    ptree pt;
+    std::istringstream is(json_data);
+    read_json(is, pt);
+    std::string status = pt.get<std::string>("status");
+    if (status.compare("success") == 0)
+    {
+        try
+        {
+            user_return_data.messageId = pt.get<std::string>("data.messageId"); 
+            return;
+        }
+        catch(...)
+        {
+            throw(new CatenisAPIMessageFormatError("Expected messageId not returned"));
+        }     
+    }
+
+    // The status code should be 200 here.
+    // Json returned with "status" : "error", "message" : "error_message".
+    std::string message = pt.get<std::string>("message","error not specified");
+    throw(new CatenisAPIResponseMessageError(message));
+}
+
+// Private Method.
+void ctn::CtnApiInternals::parseSendMessage(SendMessageResult &user_return_data, std::string json_data)
+{
+    ptree pt;
+    std::istringstream is(json_data);
+    read_json(is, pt);
+    std::string status = pt.get<std::string>("status");
+    if (status.compare("success") == 0)
+    {
+        try
+        {
+            user_return_data.messageId = pt.get<std::string>("data.messageId"); 
+            return;
+        }
+        catch(...)
+        {
+            throw(new CatenisAPIMessageFormatError("Expected messageId not returned"));
+        }     
+    }
+
+    // The status code should be 200 here.
+    // Json returned with "status" : "error", "message" : "error_message".
+    std::string message = pt.get<std::string>("message","error not specified");
+    throw(new CatenisAPIResponseMessageError(message));
+}
+
+// Private Method.
+void ctn::CtnApiInternals::parseReadMessage(ReadMessageResult &user_return_data, std::string json_data)
+{
+    ptree pt;
+    std::istringstream is(json_data);
+    read_json(is, pt);
+    std::string status = pt.get<std::string>("status");
+    if (status.compare("success") == 0)
+    {
+        try
+        {
+            user_return_data.action = pt.get<std::string>("data.action");
+
+            std::string from_deviceId = pt.get<std::string>("data.from.deviceId","");
+            if (!from_deviceId.empty())
+            {
+                std::string from_name = pt.get<std::string>("data.from.name","");
+                std::string from_prodUniqueId = pt.get<std::string>("data.from.prodUniqueId","");
+                std::shared_ptr<DeviceInfo> from_obj (new DeviceInfo(from_deviceId, from_name, from_prodUniqueId));
+                user_return_data.from = from_obj;
+            }
+            else
+            { 
+                user_return_data.from = nullptr;
+            }
+
+            std::string to_deviceId = pt.get<std::string>("data.to.deviceId","");
+            if (!to_deviceId.empty())
+            {
+                std::string to_name = pt.get<std::string>("data.to.name","");
+                std::string to_prodUniqueId = pt.get<std::string>("data.to.prodUniqueId","");
+                std::shared_ptr<DeviceInfo> to_obj (new DeviceInfo(to_deviceId, to_name, to_prodUniqueId));
+                user_return_data.to = to_obj;
+            }
+            else
+            {
+                user_return_data.to = nullptr;
+            }             
+
+            user_return_data.message = pt.get<std::string>("data.message");
+            return;
+        }
+        catch(...)
+        {
+            throw(new CatenisAPIMessageFormatError("Expected message element not found"));
+        }     
+    }
+
+    // The status code should be 200 here.
+    // Json returned with "status" : "error", "message" : "error_message".
+    std::string message = pt.get<std::string>("message","error not specified");
+    throw(new CatenisAPIResponseMessageError(message));
+}
+
+// Private Method.
+void ctn::CtnApiInternals::parseRetrieveMessageContainer(RetrieveMessageContainerResult &user_return_data, std::string json_data)
+{
+    ptree pt;
+    std::istringstream is(json_data);
+    read_json(is, pt);
+    std::string status = pt.get<std::string>("status");
+    if (status.compare("success") == 0)
+    {
+        try
+        {
+            //StorageProvidedDictionary;
+
+            user_return_data.blockchain.txid = pt.get<std::string>("data.blockchain.txid");
+            std::string val = pt.get<std::string>("data.blockchain.isConfirmed");
+            user_return_data.blockchain.isConfirmed = true;
+            if (val.compare("true") != 0)
+                user_return_data.blockchain.isConfirmed = false;
+
+            try
+            {
+                // if no elements throw an exception and return normally.
+                std::string storage = pt.get<std::string>("data.externalStorage");
+            }
+            catch(...)
+            {
+                user_return_data.externalStorage = nullptr;
+                return; // done parsing.
+            }
+
+            BOOST_FOREACH(boost::property_tree::ptree::value_type &v, pt.get_child("data.externalStorage"))
+            {
+                std::cerr << "DEBUG: key: (" << v.first.data() << ")" << std::endl; 
+                std::cerr << "DEBUG: value: (" << v.second.data() << ")" << std::endl; 
+                std::shared_ptr<StorageProvidedDictionary> map_objPtr (new StorageProvidedDictionary());
+                user_return_data.externalStorage = map_objPtr;
+                (*user_return_data.externalStorage)[v.first.data()] = v.second.data();
+            }
+            return;
+        }
+        catch(...)
+        {
+            throw(new CatenisAPIMessageFormatError("Expected message element not found"));
+        }     
+    }
+
+    // The status code should be 200 here.
+    // Json returned with "status" : "error", "message" : "error_message".
+    std::string message = pt.get<std::string>("message","error not specified");
+    throw(new CatenisAPIResponseMessageError(message));
+}
+
+// Private Method.
+void ctn::CtnApiInternals::parseListMessages(ListMessagesResult &user_return_data, std::string json_data)
+{
+    ptree pt;
+    std::istringstream is(json_data);
+    read_json(is, pt);
+    std::string status = pt.get<std::string>("status");
+    if (status.compare("success") == 0)
+    {
+        try
+        {
+            BOOST_FOREACH(boost::property_tree::ptree::value_type &v, pt.get_child("data.messages"))
+            {
+                // std::cout << "First data: " << v.first.data() << std::endl; // should be empty.
+                boost::property_tree::ptree subtree = (boost::property_tree::ptree) v.second;
+                
+                std::string messageId = subtree.get<std::string>("messageId");
+                std::string action = subtree.get<std::string>("action");
+                std::string read_confirmation_enabled = subtree.get<std::string>("readConfirmationEnabled","");
+                std::string read = subtree.get<std::string>("read","");
+                std::string date = subtree.get<std::string>("date");
+                std::string direction = subtree.get<std::string>("direction","");
+
+                std::shared_ptr<DeviceInfo> from_device_obj = nullptr;
+                std::string from_deviceId = subtree.get<std::string>("from.deviceId","");
+                if (!from_deviceId.empty())
+                {
+                    std::string from_name = subtree.get<std::string>("from.name","");
+                    std::string from_prodUniqueId = subtree.get<std::string>("from.prodUniqueId","");
+                    std::shared_ptr<DeviceInfo> from_obj (new DeviceInfo(from_deviceId, from_name, from_prodUniqueId));
+                    from_device_obj = from_obj;
+                }
+
+                std::shared_ptr<DeviceInfo> to_device_obj = nullptr;
+                std::string to_deviceId = subtree.get<std::string>("to.deviceId","");
+                if (!to_deviceId.empty())
+                {
+                    std::string to_name = subtree.get<std::string>("to.name","");
+                    std::string to_prodUniqueId = subtree.get<std::string>("to.prodUniqueId","");
+                    std::shared_ptr<DeviceInfo> to_obj (new DeviceInfo(to_deviceId, to_name, to_prodUniqueId));
+                    to_device_obj = to_obj;
+                }
+
+                std::shared_ptr<MessageDescription> msg_obj(new MessageDescription(messageId, action, direction, from_device_obj, to_device_obj, read_confirmation_enabled, read, date));
+
+                user_return_data.messageList.push_back(msg_obj);
+            }
+            user_return_data.msgCount = pt.get<std::string>("data.msgCount","");
+            user_return_data.countExceeded = pt.get<std::string>("data.countExceeded");
+            return;
+       }
+       catch(...)
+       {
+            throw(new CatenisAPIMessageFormatError("Expected message element not found"));
+       }     
+    }
+
+    // The status code should be 200 here.
+    // Json returned with "status" : "error", "message" : "error_message".
+    std::string message = pt.get<std::string>("message","error not specified");
+    throw(new CatenisAPIResponseMessageError(message));
+}
+
+// STATIC method; used by an exception.
+std::string ctn::CtnApiInternals::parseJsonForKeyValue(std::string json_data, std::string key)
+{
+    try
+    {
+        ptree pt;
+        std::istringstream is(json_data);
+        read_json(is, pt);
+        return(pt.get<std::string>(key,""));
+    }
+    catch(...)
+    {
+        return("");
+    }
+}
+

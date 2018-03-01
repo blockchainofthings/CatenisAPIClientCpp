@@ -10,6 +10,8 @@
 #include <map>
 #include <string>
 
+#include <CatenisApiClient.h>
+
 // Internal constants
 const std::string API_PATH = "/api/";
 const std::string SIGN_VERSION_ID = "CTN1";
@@ -58,6 +60,16 @@ public:
     
     CtnApiInternals(std::string device_id, std::string api_access_secret, std::string host, std::string port, std::string environment, bool secure, std::string version);
     void httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, std::string &response_data);
+
+    // Methods to parse the returned API Json string-messages.
+    void parseLogMessage(LogMessageResult &user_return_data, std::string json_data);
+    void parseSendMessage(SendMessageResult &user_return_data, std::string json_data);
+    void parseReadMessage(ReadMessageResult &user_return_data, std::string json_data);
+    void parseRetrieveMessageContainer(RetrieveMessageContainerResult &user_return_data, std::string json_data);
+    void parseListMessages(ListMessagesResult &user_return_data, std::string json_data);
+
+    // Static function used by an Exception to parse a json string and extract the contained message.
+    static std::string parseJsonForKeyValue(std::string json_data, std::string attribute);
 };
 
 }
