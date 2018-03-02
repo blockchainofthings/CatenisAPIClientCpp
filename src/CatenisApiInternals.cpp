@@ -545,20 +545,3 @@ void ctn::CtnApiInternals::parseListMessages(ListMessagesResult &user_return_dat
         throw CatenisClientError("Unexpected returned data from List Messages API method");
     }
 }
-
-// STATIC method; used by an exception.
-std::string ctn::CtnApiInternals::parseJsonForKeyValue(std::string json_data, std::string key)
-{
-    try
-    {
-        ptree pt;
-        std::istringstream is(json_data);
-        read_json(is, pt);
-        return(pt.get<std::string>(key,""));
-    }
-    catch(...)
-    {
-        return("");
-    }
-}
-

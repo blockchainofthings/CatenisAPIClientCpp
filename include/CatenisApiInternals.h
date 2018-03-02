@@ -69,9 +69,6 @@ public:
     void parseReadMessage(ReadMessageResult &user_return_data, std::string json_data);
     void parseRetrieveMessageContainer(RetrieveMessageContainerResult &user_return_data, std::string json_data);
     void parseListMessages(ListMessagesResult &user_return_data, std::string json_data);
-
-    // Static function used by an Exception to parse a json string and extract the contained message.
-    static std::string parseJsonForKeyValue(std::string json_data, std::string attribute);
 };
 
 }
