@@ -27,8 +27,6 @@ HunterGate(
 
 # Final stand-alone lib file
 project(CatenisAPIClient)
-# Dependent temp lib
-project(tempCatenis)
 
 # Add compiler specific flags
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -60,7 +58,7 @@ find_package(OpenSSL REQUIRED)
 
 
 # Link and make lib
-add_library(tempCatenis src/CatenisApiClient.cpp include/CatenisApiClient.h src/CatenisApiInternals.cpp include/CatenisApiInternals.h)
+add_library(tempCatenis src/CatenisApiClient.cpp include/CatenisApiClient.h src/CatenisApiInternals.cpp include/CatenisApiInternals.h include/CatenisApiException.h)
 target_link_libraries(tempCatenis Boost::system Boost::regex OpenSSL::SSL OpenSSL::Crypto)
 
 # fix cmake generator bug, kinda hacky since static, will fix later if needed

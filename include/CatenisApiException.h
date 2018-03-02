@@ -9,10 +9,14 @@
 #include <sstream>
 #include <string>
 
-#include <CatenisApiInternals.h>
 
 namespace ctn
 {
+
+struct ApiErrorResponse {
+	std::string status;
+	std::string message;
+};
 
 /*
  * Catenis Exceptions (base class) to be thrown or for catching all errors.
@@ -21,14 +25,14 @@ namespace ctn
  */
 class CatenisAPIException
 {
-    public:
-    CatenisAPIException(std::string error_message) : errorMessage(error_message) {}
-    virtual ~CatenisAPIException() {}
+public:
+    explicit CatenisAPIException(std::string error_message) : errorMessage(error_message) {}
+    virtual ~CatenisAPIException() = default;
 
     virtual std::string getErrorMessage() {return(errorMessage);}
-    virtual std::string getErrorDescription() { return("Client error: " + errorMessage); }
+    virtual std::string getErrorDescription() = 0;
 
-    protected:
+protected:
 	std::string errorMessage; 
 };
 
@@ -43,32 +47,25 @@ class CatenisAPIException
  */
 class CatenisAPIError : public CatenisAPIException
 {
-    public:
-    CatenisAPIError(std::string error_message, int http_status_code=0, std::string json_message="") 
-        : CatenisAPIException(error_message), httpStatusCode(http_status_code), jsonMessage(json_message) {} 
-    ~CatenisAPIError() {}
+public:
+	CatenisAPIError(std::string error_message, int http_status_code, ApiErrorResponse &error_response)
+			: CatenisAPIException(error_message), httpStatusCode(http_status_code), jsonErrorMessage(error_response.message) {}
+    ~CatenisAPIError() override = default;
 
-    // If a proper json object was not returned or the json error message
-    // was not included use the HTTP Status Message.
-    virtual std::string getErrorDescription() 
-    {
-        // Find the returned message text.
-        jsonErrorMessage =  CtnApiInternals::parseJsonForKeyValue(jsonMessage, "message");
+    int getHttpStatusCode() { return(httpStatusCode); }
+	std::string getErrorMessage() override {
+		return jsonErrorMessage.empty() ? errorMessage : jsonErrorMessage;
+	}
+	std::string getErrorDescription() override {
+		std::ostringstream oss;
 
-        std::ostringstream oss; 
-        if (jsonErrorMessage.empty())
-            oss << "API error: [" << httpStatusCode << "]-" << errorMessage;
-        else
-            oss << "API error: [" << httpStatusCode << "]-" << jsonErrorMessage;
-        return(oss.str());
-    }
+		oss << "API error: [" << httpStatusCode << "] - " << getErrorMessage();
 
-    int getHttpStatusCode() {return(httpStatusCode);}
-    std::string getJsonMessage() {return(jsonMessage);}
+		return oss.str();
+	}
 
-    private:
+private:
 	int httpStatusCode;
-	std::string jsonMessage; 
     std::string jsonErrorMessage;
 };
 
@@ -78,35 +75,12 @@ class CatenisAPIError : public CatenisAPIException
  */
 class CatenisClientError : public CatenisAPIException
 {
-    public:
-    CatenisClientError(std::string error_message) : CatenisAPIException(error_message) {} 
-    ~CatenisClientError() {}
+public:
+    explicit CatenisClientError(std::string error_message) : CatenisAPIException(error_message) {}
+    ~CatenisClientError() override = default;
+
+    std::string getErrorDescription() override { return("Client error: " + errorMessage); }
 };
-
-/*
- * Catenis Exceptions to be thrown for errors encountered during parsing the message fields.
- *
- */
-class CatenisAPIMessageFormatError : public CatenisAPIException
-{
-    public:
-    CatenisAPIMessageFormatError(std::string error_message) : CatenisAPIException(error_message) {} 
-    ~CatenisAPIMessageFormatError() {}
-};
-
-/*
- * Catenis API Exceptions with a 200 status code and a json error message.
- *
- */
-class CatenisAPIResponseMessageError : public CatenisAPIException
-{
-    public:
-    CatenisAPIResponseMessageError(std::string error_message) : CatenisAPIException(error_message) {} 
-    ~CatenisAPIResponseMessageError() {}
-
-    virtual std::string getErrorDescription() { return("API error: " + errorMessage); }
-};
-
 
 }
 #endif

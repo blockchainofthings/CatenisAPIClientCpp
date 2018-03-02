@@ -25,16 +25,16 @@ namespace boost
 {
 namespace property_tree
 {
-    
 template < class Key, class Data, class KeyCompare >
 class basic_ptree;
 typedef basic_ptree< std::string, std::string, std::less<std::string> > ptree;
-    
 }
 }
 
 namespace ctn
 {
+// Forward declaration of ApiErrorResponse structure
+struct ApiErrorResponse;
 
 class CtnApiInternals
 {
@@ -55,6 +55,8 @@ private:
     void signRequest(std::string verb, std::string endpoint, std::map<std::string, std::string> &headers, std::string payload, time_t now);
     std::string hashData(const std::string str);
     std::string signData(const std::string key, const std::string data, bool hex_encode = false);
+
+    void parseApiErrorResponse(ApiErrorResponse &error_response, std::string &json_data);
     
 public:
     

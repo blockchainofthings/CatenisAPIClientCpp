@@ -11,6 +11,7 @@
 #include <string>
 #include <ctime>
 #include <list>
+#include <map>
 
 // Version specific constants
 const std::string DEFAULT_API_VERSION = "0.3";
@@ -19,7 +20,7 @@ namespace ctn
 {
     
 /*
- * Struct to contain options for main api calls
+ * Message options structure
  *
  * @member encoding : Value identifying the encoding of the message
  * ["utf8"|"base64"|"hex"]
@@ -50,9 +51,9 @@ struct MessageOptions
 };
     
 /*
- * Struct to contain device information
+ * Catenis virtual device structure
  *
- * @member id : ID of target device. Should be Catenis device ID unless isProdUniqueId is true
+ * @member id : ID of device. Should be Catenis device ID unless isProdUniqueId is true
  * @member isProdUniqueId : Indicate whether supply ID is a product unique ID
  */
 struct Device
@@ -68,7 +69,7 @@ struct Device
 };
 
 /*
- * Struct to contain the returned data.
+ * Log Message API method response structure
  *
  * @member messageId : ID of logged message.
  */
@@ -78,7 +79,7 @@ struct LogMessageResult
 };
 
 /*
- * Struct to contain the returned data.
+ * Send Message API method response structure
  *
  * @member messageId : ID of sent message.
  */
@@ -87,13 +88,12 @@ struct SendMessageResult
 	std::string messageId;
 };
 
-
 /*
- * Struct to contain the returned data.
+ * Device info structure
  *
- * @member deviceId : Catenis ID of the sending device.
+ * @member deviceId : Catenis ID of device.
  * @member name : Device name.
- * @member prodUniqueId : Product unique ID.
+ * @member prodUniqueId : Device's product unique ID.
  */
 
 struct DeviceInfo
@@ -108,27 +108,24 @@ struct DeviceInfo
 };
 
 /*
- * Struct to contain the returned data.
+ * Read Message API method response structure
  *
  * @member action : the action performed on the message: 'log' or 'send'.
- * @member from : Catenis ID/Name/ProdUniqueId of the sending device.
- * @member to : Catenis ID/Name/ProdUniqueId of the target device.
+ * @member from : Catenis ID/Name/ProdUniqueId of the origin device.
  * @member message : the message read.
  */
 struct ReadMessageResult
 {
 	std::string action;
     std::shared_ptr<DeviceInfo> from;
-    std::shared_ptr<DeviceInfo> to;
 	std::string message;
 };
 
-
 /*
- * Struct to contain the returned data.
+ * Blockchain transaction info structure
  *
- * @member txid : TXID of blockchain transaction where message is recorded.
- * @member isConfirmed : Indicates whether the returned txid is confirmed.
+ * @member txid : ID of blockchain transaction.
+ * @member isConfirmed : Indicates whether transaction is confirmed.
  */
 struct TransactionInfo
 {
@@ -136,33 +133,30 @@ struct TransactionInfo
     bool isConfirmed;
 };
 
-// optional: storageProviderName, externalStorage
-typedef std::map<std::string, std::string> StorageProvidedDictionary;
+// Dictionary holding external storage reference by storage provider name
+typedef std::map<std::string, std::string> StorageProviderDictionary;
 
 /*
- * Struct to contain the returned data.
+ * Read Message API method response structure
  *
  * @member blockchain: TXID of blockchain transaction where the message is recorded.
  * @member externalStorage : [optional] only returned if message is stored in an external storage.
  * @member storageProviderName : Key: storage provider name.
  */
-
 struct RetrieveMessageContainerResult
 {
     TransactionInfo blockchain;
-    std::shared_ptr<StorageProvidedDictionary> externalStorage;
+    std::shared_ptr<StorageProviderDictionary> externalStorage;
 };
 
-
 /*
- * Struct to contain the returned data.
+ * Message description structure
  *
  * @member messageId : ID of message.
  * @member action : Action performed: 'log' or 'send'.
  * @member direction : Direction of 'send' message: 'inbound' or 'outbound'.
  * @member from : Catenis ID/Name/ProdUniqueId of the sending device.
  * @member to : Catenis ID/Name/ProdUniqueId of the target device.
- * @member readConfirmationEnabled : Indicates whether the message had been sent with read-confirmation enabled.
  * @member read : Indicates whether the message had already been read.
  * @member date : ISO 8601 formatted date and time when message was logged, sent or received.
  */
@@ -173,32 +167,28 @@ struct MessageDescription
     std::string direction;
     std::shared_ptr<DeviceInfo> from;
     std::shared_ptr<DeviceInfo> to;
-    std::string readConfirmationEnabled;
-    std::string read;
+    std::shared_ptr<bool> read;
     std::string date;
 
     MessageDescription(std::string message_id, std::string action_arg, std::string direction_arg, 
         std::shared_ptr<DeviceInfo> from_arg, std::shared_ptr<DeviceInfo> to_arg,
-        std::string read_confirmation_enabled, std::string read_arg, std::string date_arg)
-    : messageId(message_id), action(action_arg), direction(direction_arg), from(from_arg), to(to_arg),
-        readConfirmationEnabled(read_confirmation_enabled), read(read_arg), date(date_arg) {}
+        std::shared_ptr<bool> read_arg, std::string date_arg)
+            : messageId(message_id), action(action_arg), direction(direction_arg), from(from_arg), to(to_arg),
+            read(read_arg), date(date_arg) {}
     ~MessageDescription() {}
 };
 
 /*
- * Struct to contain the returned data.
+ * List Messages API method response structure
  *
  * @member messageList : List of structures.
- * @member msgCount : Number of messages for which information is returned.
  * @member countExceeded : Was the actual number of messages greater than the max returnable.
  */
 struct ListMessagesResult
 {
     std::list< std::shared_ptr<MessageDescription> > messageList; 
-	std::string msgCount;
-	std::string countExceeded;
+	bool countExceeded;
 };
-
 
 // Forward declare internals
 class CtnApiInternals;
@@ -313,7 +303,6 @@ public:
      *
      */
     void listMessages(ListMessagesResult &data, std::string action = "any", std::string direction = "any", std::string from_device_ids = "", std::string to_device_ids = "", std::string from_device_prod_ids = "", std::string to_device_prod_ids = "", std::string read_state = "any", std::string start_date = "", std::string endDate = "");
-
 };
 
 }
