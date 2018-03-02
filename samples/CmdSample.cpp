@@ -220,8 +220,6 @@ int main(int argc, char* argv[])
                 for (; it != data.messageList.end(); it++)
                 {
                     MessageDescription msgD = *(*it);
-                    std::cout << ">>>>>> Boolean true:" << true << endl;
-                    std::cout << ">>>>>> Boolean false:" << false << endl;
                     std::cout << "--------------------------------Message";
                     std::cout << "--------------------------------" << endl;
                     std::cout << "MessageId\t\t\t: " << msgD.messageId << endl;

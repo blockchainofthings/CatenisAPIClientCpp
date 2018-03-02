@@ -185,10 +185,6 @@ void ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
         // Write response data
         response_data = std::string(std::istreambuf_iterator<char>(response_stream), std::istreambuf_iterator<char>());
 
-#if 1
-        std::cerr << "DEBUG STATUS LINE: (" << status_code << "-" << status_message << ")" << std::endl;
-        std::cerr << "DEBUG HTTP_RESPONSE: (" << response_data << ")" << std::endl;
-#endif
         if (status_code != 200) {
             ApiErrorResponse errorResponse;
             parseApiErrorResponse(errorResponse, response_data);
