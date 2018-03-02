@@ -14,7 +14,7 @@
 #include <map>
 
 // Version specific constants
-const std::string DEFAULT_API_VERSION = "0.3";
+const std::string DEFAULT_API_VERSION = "0.5";
 
 namespace ctn
 {
@@ -33,20 +33,23 @@ struct MessageOptions
     std::string encoding;
     bool encrypt;
     std::string storage;
+    bool readConfirmation;
     
-    // Default contructor with default values for members
+    // Default constructor with default values for members
     MessageOptions()
     {
         encoding = "utf8";
         encrypt = true;
         storage = "auto";
+        readConfirmation = false;
     }
 
-    MessageOptions(std::string encoding, bool encrypt, std::string storage)
+    MessageOptions(std::string encoding, bool encrypt, std::string storage, bool read_confirmation = false)
     {
         this->encoding = encoding;
         this->encrypt = encrypt;
         this->storage = storage;
+        this->readConfirmation = read_confirmation;
     }
 };
     
@@ -157,6 +160,7 @@ struct RetrieveMessageContainerResult
  * @member direction : Direction of 'send' message: 'inbound' or 'outbound'.
  * @member from : Catenis ID/Name/ProdUniqueId of the sending device.
  * @member to : Catenis ID/Name/ProdUniqueId of the target device.
+ * @member readConfirmationEnabled : Indicates whether the message had been sent with read-confirmation enabled.
  * @member read : Indicates whether the message had already been read.
  * @member date : ISO 8601 formatted date and time when message was logged, sent or received.
  */
@@ -167,14 +171,15 @@ struct MessageDescription
     std::string direction;
     std::shared_ptr<DeviceInfo> from;
     std::shared_ptr<DeviceInfo> to;
+    std::shared_ptr<bool> readConfirmationEnabled;
     std::shared_ptr<bool> read;
     std::string date;
 
     MessageDescription(std::string message_id, std::string action_arg, std::string direction_arg, 
         std::shared_ptr<DeviceInfo> from_arg, std::shared_ptr<DeviceInfo> to_arg,
-        std::shared_ptr<bool> read_arg, std::string date_arg)
+        std::shared_ptr<bool> &read_confirmation_enabled, std::shared_ptr<bool> read_arg, std::string date_arg)
             : messageId(message_id), action(action_arg), direction(direction_arg), from(from_arg), to(to_arg),
-            read(read_arg), date(date_arg) {}
+            readConfirmationEnabled(read_confirmation_enabled), read(read_arg), date(date_arg) {}
     ~MessageDescription() {}
 };
 
@@ -182,11 +187,13 @@ struct MessageDescription
  * List Messages API method response structure
  *
  * @member messageList : List of structures.
+ * @member msgCount : Number of messages for which information is returned.
  * @member countExceeded : Was the actual number of messages greater than the max returnable.
  */
 struct ListMessagesResult
 {
     std::list< std::shared_ptr<MessageDescription> > messageList; 
+	int msgCount;
 	bool countExceeded;
 };
 

@@ -52,6 +52,7 @@ void ctn::CtnApiClient::sendMessage(SendMessageResult &data, const Device &devic
     request_data.put("targetDevice.isProdUniqueId", device.is_prod_uniqueid);
     request_data.put("options.encoding", option.encoding);
     request_data.put("message", message);
+    request_data.put("options.readConfirmation", option.readConfirmation);
     request_data.put("options.encoding", option.encoding);
     request_data.put("options.encrypt", option.encrypt);
     request_data.put("options.storage", option.storage);

@@ -494,6 +494,11 @@ void ctn::CtnApiInternals::parseListMessages(ListMessagesResult &user_return_dat
                 std::string messageId = subtree.get<std::string>("messageId");
                 std::string action = subtree.get<std::string>("action");
 
+                std::shared_ptr<bool> read_confirmation_enabled;
+                if (subtree.find("readConfirmationEnabled") != subtree.not_found()) {
+                    read_confirmation_enabled = std::make_shared<bool>(subtree.get<bool>("readConfirmationEnabled",false));
+                }
+
                 std::shared_ptr<bool> read;
                 if (subtree.find("read") != subtree.not_found()) {
                     read = std::make_shared<bool>(subtree.get<bool>("read",false));
@@ -522,10 +527,11 @@ void ctn::CtnApiInternals::parseListMessages(ListMessagesResult &user_return_dat
                     to_device_obj = to_obj;
                 }
 
-                std::shared_ptr<MessageDescription> msg_obj(new MessageDescription(messageId, action, direction, from_device_obj, to_device_obj, read, date));
+                std::shared_ptr<MessageDescription> msg_obj(new MessageDescription(messageId, action, direction, from_device_obj, to_device_obj, read_confirmation_enabled, read, date));
 
                 user_return_data.messageList.push_back(msg_obj);
             }
+            user_return_data.msgCount = pt.get<int>("data.msgCount",0);
             user_return_data.countExceeded = pt.get<bool>("data.countExceeded",false);
             return;
        }

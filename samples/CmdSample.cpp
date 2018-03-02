@@ -59,6 +59,7 @@ int main(int argc, char* argv[])
             cout << "     encoding <msg_encoding>" << endl;
             cout << "     encrypt <bool>" << endl;
             cout << "     storage <msg_storage>" << endl;
+            cout << "     readConfirmation <bool>" << endl;
             cout << "     exit" << endl;
             cout << endl;
 
@@ -88,6 +89,14 @@ int main(int argc, char* argv[])
                 }
                 else if (opt == "exit") {
                     optExit = true;
+                }
+                else  if (opt == "readConfirmation") {
+                    string boolVal;
+
+                    cin >> boolVal;
+                    cin.ignore();
+
+                    msgOpts.readConfirmation = boolVal == "yes";
                 }
                 else {
                     cout << "Invalid message option" << endl;
@@ -250,11 +259,15 @@ int main(int argc, char* argv[])
                             std::cout << "ToProdUniqueId\t\t\t: " << msgD.to->prodUniqueId << endl;
                     }
 
+                    if (msgD.readConfirmationEnabled != nullptr)
+                        std::cout << "ReadConfirmationEnabled\t\t: " << *msgD.readConfirmationEnabled << endl;
+
                     if (msgD.read != nullptr)
                         std::cout << "Read\t\t\t\t: " << *msgD.read << endl;
 
                     std::cout << "Date\t\t\t\t: " << msgD.date << endl;
                 }
+                std::cout << "MsgCount\t\t\t: " << data.msgCount << std::endl;
                 std::cout << "CountExceeded\t\t\t: " << data.countExceeded << std::endl;
             }
             catch(CatenisAPIException &errObject)
