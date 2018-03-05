@@ -40,7 +40,6 @@ int main(int argc, char* argv[])
     cout << "    retrieve <message_id>" << endl;
     cout << "    list" << endl;
     cout << "    exit" << endl;
-    cout << endl;
 
     bool exit = false;
     MessageOptions msgOpts;
@@ -49,7 +48,7 @@ int main(int argc, char* argv[])
     {
         string method, device_id, message_id, message;
 
-        cout << "> ";
+        cout << endl << "> ";
         cin >> method;
 
         if (method == "msgOpts") {
@@ -61,14 +60,13 @@ int main(int argc, char* argv[])
             cout << "     storage <msg_storage>" << endl;
             cout << "     readConfirmation <bool>" << endl;
             cout << "     exit" << endl;
-            cout << endl;
 
             bool optExit = false;
 
             do {
                 string opt;
 
-                cout << "msgOpts> ";
+                cout << endl << "msgOpts> ";
                 cin >> opt;
 
                 if (opt == "encoding") {
