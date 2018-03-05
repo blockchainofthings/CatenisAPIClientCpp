@@ -22,7 +22,7 @@
 
 
 // API Method: Log Message
-void ctn::CtnApiClient::logMessage(LogMessageResult &data, std::string message, const MessageOptions&option)
+void ctn::CtnApiClient::logMessage(LogMessageResult &data, std::string message, const MessageOptions &option)
 {
     std::map<std::string, std::string> params;
     std::map<std::string, std::string> queries;
