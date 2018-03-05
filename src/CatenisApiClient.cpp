@@ -10,31 +10,43 @@
 #include <string>
 #include <map>
 
+#if defined(COM_SUPPORT_LIB_BOOST_ASIO)
 #include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/foreach.hpp>
-
-using boost::property_tree::ptree;
-using boost::property_tree::read_json;
-using boost::property_tree::write_json;
+#elif defined(COM_SUPPORT_LIB_POCO)
+#include <Poco/JSON/Object.h>
+#endif
 
 #include <CatenisApiException.h>
 #include <CatenisApiInternals.h>
 #include <CatenisApiClient.h>
+
 
 // API Method: Log Message
 void ctn::CtnApiClient::logMessage(LogMessageResult &data, std::string message, const MessageOptions&option)
 {
     std::map<std::string, std::string> params;
     std::map<std::string, std::string> queries;
-    boost::property_tree::ptree request_data;
-    
+
     // write request body
+#if defined(COM_SUPPORT_LIB_BOOST_ASIO)
+    boost::property_tree::ptree request_data;
+
     request_data.put("message", message);
     request_data.put("options.encoding", option.encoding);
     request_data.put("options.encrypt", option.encrypt);
     request_data.put("options.storage", option.storage);
-    
+#elif defined(COM_SUPPORT_LIB_POCO)
+    Poco::JSON::Object request_data;
+
+    request_data.set("message", message);
+
+    Poco::JSON::Object options;
+    options.set("encoding", option.encoding);
+    options.set("encrypt", option.encrypt);
+    options.set("storage", option.storage);
+    request_data.set("options", options);
+#endif
+
     std::string http_return_data;
     this->internals_->httpRequest("POST", "messages/log", params, queries, request_data, http_return_data);
     this->internals_->parseLogMessage(data, http_return_data);
@@ -45,18 +57,36 @@ void ctn::CtnApiClient::sendMessage(SendMessageResult &data, const Device &devic
 {
     std::map<std::string, std::string> params;
     std::map<std::string, std::string> queries;
-    boost::property_tree::ptree request_data;
-    
+
     // write request body
+#if defined(COM_SUPPORT_LIB_BOOST_ASIO)
+    boost::property_tree::ptree request_data;
+
     request_data.put("targetDevice.id", device.device_id);
     request_data.put("targetDevice.isProdUniqueId", device.is_prod_uniqueid);
-    request_data.put("options.encoding", option.encoding);
     request_data.put("message", message);
     request_data.put("options.readConfirmation", option.readConfirmation);
     request_data.put("options.encoding", option.encoding);
     request_data.put("options.encrypt", option.encrypt);
     request_data.put("options.storage", option.storage);
-    
+#elif defined(COM_SUPPORT_LIB_POCO)
+    Poco::JSON::Object request_data;
+
+    Poco::JSON::Object targetD;
+    targetD.set("id", device.device_id);
+    targetD.set("isProdUniqueId", device.is_prod_uniqueid);
+    request_data.set("targetDevice", targetD);
+
+    request_data.set("message", message);
+
+    Poco::JSON::Object options;
+    options.set("readConfirmation", option.readConfirmation);
+    options.set("encoding", option.encoding);
+    options.set("encrypt", option.encrypt);
+    options.set("storage", option.storage);
+    request_data.set("options", options);
+#endif
+
     std::string http_return_data;
     this->internals_->httpRequest("POST", "messages/send", params, queries, request_data, http_return_data);
     this->internals_->parseSendMessage(data, http_return_data); 
@@ -67,11 +97,16 @@ void ctn::CtnApiClient::readMessage(ReadMessageResult &data, std::string message
 {
     std::map<std::string, std::string> params;
     std::map<std::string, std::string> queries;
-    boost::property_tree::ptree request_data;
-    
+
     params[":messageId"] = message_id;
     queries["encoding"] = encoding;
-    
+
+#if defined(COM_SUPPORT_LIB_BOOST_ASIO)
+    boost::property_tree::ptree request_data;
+#elif defined(COM_SUPPORT_LIB_POCO)
+    Poco::JSON::Object request_data;
+#endif
+
     std::string http_return_data;
     this->internals_->httpRequest("GET", "messages/:messageId", params, queries, request_data, http_return_data);
     this->internals_->parseReadMessage(data, http_return_data); 
@@ -82,10 +117,15 @@ void ctn::CtnApiClient::retrieveMessageContainer(RetrieveMessageContainerResult 
 {
     std::map<std::string, std::string> params;
     std::map<std::string, std::string> queries;
-    boost::property_tree::ptree request_data;
-    
+
     params[":messageId"] = message_id;
-    
+
+#if defined(COM_SUPPORT_LIB_BOOST_ASIO)
+    boost::property_tree::ptree request_data;
+#elif defined(COM_SUPPORT_LIB_POCO)
+    Poco::JSON::Object request_data;
+#endif
+
     std::string http_return_data;
     this->internals_->httpRequest("GET", "messages/:messageId/container", params, queries, request_data, http_return_data);
     this->internals_->parseRetrieveMessageContainer(data, http_return_data); 
@@ -96,8 +136,7 @@ void ctn::CtnApiClient::listMessages(ListMessagesResult &data, std::string actio
 {
     std::map<std::string, std::string> params;
     std::map<std::string, std::string> queries;
-    boost::property_tree::ptree request_data;
-    
+
     queries["action"] = action;
     queries["direction"] = direction;
     
@@ -110,7 +149,13 @@ void ctn::CtnApiClient::listMessages(ListMessagesResult &data, std::string actio
     
     if(start_date != "") queries["startDate"] = start_date;
     if(endDate != "") queries["endDate"] = endDate;
-    
+
+#if defined(COM_SUPPORT_LIB_BOOST_ASIO)
+    boost::property_tree::ptree request_data;
+#elif defined(COM_SUPPORT_LIB_POCO)
+    Poco::JSON::Object request_data;
+#endif
+
     std::string http_return_data;
     this->internals_->httpRequest("GET", "messages", params, queries, request_data, http_return_data);
     this->internals_->parseListMessages(data, http_return_data);

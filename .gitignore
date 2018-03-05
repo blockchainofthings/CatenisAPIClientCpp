@@ -40,6 +40,8 @@ _builds/
 # Xcode
 *.xcodeproj
 
-# Clion
+# CLion
 .idea
 cmake-build-debug
+cmake-build-boostasio-debug
+cmake-build-poco-debug
