@@ -54,7 +54,6 @@ if ("${COM_SUPPORT_LIB}" STREQUAL "BOOST_ASIO")
     add_definitions(-DCOM_SUPPORT_LIB_BOOST_ASIO)
 elseif ("${COM_SUPPORT_LIB}" STREQUAL "POCO")
     add_definitions(-DCOM_SUPPORT_LIB_POCO)
-    add_definitions(-DPOCO_ENABLE_CPP11)
 endif()
 
 # build sample option
