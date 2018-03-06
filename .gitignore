@@ -42,7 +42,4 @@ _builds/
 
 # CLion
 .idea
-cmake-build-boostasio-debug
-cmake-build-boostasio-release
-cmake-build-poco-debug
-cmake-build-poco-release
+cmake-build-*
