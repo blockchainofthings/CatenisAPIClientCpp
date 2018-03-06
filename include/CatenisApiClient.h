@@ -314,5 +314,4 @@ public:
 
 }
 
-
 #endif  // __CATENISAPICLIENT_H__

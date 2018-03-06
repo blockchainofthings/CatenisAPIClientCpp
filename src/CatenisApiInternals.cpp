@@ -25,13 +25,9 @@
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/regex.hpp>
-#include <boost/foreach.hpp>
+#include <json-spirit/json_spirit_reader_template.h>
+#include <json-spirit/json_spirit_writer_template.h>
 
-using boost::property_tree::json_parser::read_json;
-using boost::property_tree::json_parser::write_json;
 using boost::asio::ip::tcp;
 #elif defined(COM_SUPPORT_LIB_POCO)
 #include <Poco/JSON/Object.h>
@@ -56,7 +52,7 @@ using boost::asio::ip::tcp;
 
 // http request
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-void ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, std::string &response_data)
+void ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, json_spirit::mValue const &request_data, std::string &response_data)
 #elif defined(COM_SUPPORT_LIB_POCO)
 void ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, Poco::JSON::Object &request_data, std::string &response_data)
 #endif
@@ -86,11 +82,7 @@ void ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
     {
         std::ostringstream payload_buf;
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-        write_json (payload_buf, request_data, false);
-
-        // fix boost.ptree bug where it treats all types as string
-        boost::regex exp("\"(null|true|false|[0-9]+(\\.[0-9]+)?)\"");
-        payload_json = boost::regex_replace(payload_buf.str(), exp, "$1");
+        payload_json = json_spirit::write_string(request_data, json_spirit::Output_options::raw_utf8);
 #elif defined(COM_SUPPORT_LIB_POCO)
         Poco::JSON::Stringifier::stringify(request_data, payload_buf);
         payload_json = payload_buf.str();
@@ -389,12 +381,12 @@ std::string ctn::CtnApiInternals::signData(std::string key, std::string data, bo
 void ctn::CtnApiInternals::parseApiErrorResponse(ApiErrorResponse &error_response, std::string &json_data) {
     try {
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-        boost::property_tree::ptree pt;
-        std::istringstream is(json_data);
+        json_spirit::mValue result;
+        json_spirit::read_string_or_throw(json_data, result);
 
-        read_json(is, pt);
+        json_spirit::mObject &retObj = result.get_obj();
 
-        std::string status = pt.get<std::string>("status");
+        std::string const &status = retObj["status"].get_str();
 #elif defined(COM_SUPPORT_LIB_POCO)
         Poco::JSON::Parser parser;
         Poco::Dynamic::Var result = parser.parse(json_data);
@@ -407,7 +399,7 @@ void ctn::CtnApiInternals::parseApiErrorResponse(ApiErrorResponse &error_respons
         if (status == "error") {
             error_response.status = status;
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-            error_response.message = pt.get<std::string>("message");
+            error_response.message = retObj["message"].get_str();
 #elif defined(COM_SUPPORT_LIB_POCO)
             error_response.message = retObj->getValue<std::string>("message");
 #endif
@@ -425,12 +417,12 @@ void ctn::CtnApiInternals::parseLogMessage(LogMessageResult &user_return_data, s
 {
     try {
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-        boost::property_tree::ptree pt;
-        std::istringstream is(json_data);
+        json_spirit::mValue result;
+        json_spirit::read_string_or_throw(json_data, result);
 
-        read_json(is, pt);
+        json_spirit::mObject &retObj = result.get_obj();
 
-        std::string status = pt.get<std::string>("status");
+        std::string const &status = retObj["status"].get_str();
 #elif defined(COM_SUPPORT_LIB_POCO)
         Poco::JSON::Parser parser;
         Poco::Dynamic::Var result = parser.parse(json_data);
@@ -442,7 +434,9 @@ void ctn::CtnApiInternals::parseLogMessage(LogMessageResult &user_return_data, s
 
         if (status == "success") {
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-            user_return_data.messageId = pt.get<std::string>("data.messageId");
+            json_spirit::mObject &data = retObj["data"].get_obj();
+
+            user_return_data.messageId = data["messageId"].get_str();
 #elif defined(COM_SUPPORT_LIB_POCO)
             Poco::JSON::Object::Ptr data = retObj->getObject("data");
 
@@ -463,12 +457,12 @@ void ctn::CtnApiInternals::parseSendMessage(SendMessageResult &user_return_data,
 {
     try {
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-        boost::property_tree::ptree pt;
-        std::istringstream is(json_data);
+        json_spirit::mValue result;
+        json_spirit::read_string_or_throw(json_data, result);
 
-        read_json(is, pt);
+        json_spirit::mObject &retObj = result.get_obj();
 
-        std::string status = pt.get<std::string>("status");
+        std::string const &status = retObj["status"].get_str();
 #elif defined(COM_SUPPORT_LIB_POCO)
         Poco::JSON::Parser parser;
         Poco::Dynamic::Var result = parser.parse(json_data);
@@ -480,7 +474,9 @@ void ctn::CtnApiInternals::parseSendMessage(SendMessageResult &user_return_data,
 
         if (status == "success") {
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-            user_return_data.messageId = pt.get<std::string>("data.messageId");
+            json_spirit::mObject &data = retObj["data"].get_obj();
+
+            user_return_data.messageId = data["messageId"].get_str();
 #elif defined(COM_SUPPORT_LIB_POCO)
             Poco::JSON::Object::Ptr data = retObj->getObject("data");
 
@@ -501,12 +497,12 @@ void ctn::CtnApiInternals::parseReadMessage(ReadMessageResult &user_return_data,
 {
     try {
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-        boost::property_tree::ptree pt;
-        std::istringstream is(json_data);
+        json_spirit::mValue result;
+        json_spirit::read_string_or_throw(json_data, result);
 
-        read_json(is, pt);
+        json_spirit::mObject &retObj = result.get_obj();
 
-        std::string status = pt.get<std::string>("status");
+        std::string const &status = retObj["status"].get_str();
 #elif defined(COM_SUPPORT_LIB_POCO)
         Poco::JSON::Parser parser;
         Poco::Dynamic::Var result = parser.parse(json_data);
@@ -518,13 +514,25 @@ void ctn::CtnApiInternals::parseReadMessage(ReadMessageResult &user_return_data,
 
         if (status == "success") {
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-            user_return_data.action = pt.get<std::string>("data.action");
+            json_spirit::mObject &data = retObj["data"].get_obj();
 
-            std::string from_deviceId = pt.get<std::string>("data.from.deviceId","");
+            user_return_data.action = data["action"].get_str();
 
-            if (!from_deviceId.empty()) {
-                std::string from_name = pt.get<std::string>("data.from.name","");
-                std::string from_prodUniqueId = pt.get<std::string>("data.from.prodUniqueId","");
+            if (data.find("from") != data.end()) {
+                json_spirit::mObject &from = data["from"].get_obj();
+
+                std::string const &from_deviceId = from["deviceId"].get_str();
+
+                std::string from_name;
+                if (from.find("name") != from.end()) {
+                    from_name = from["name"].get_str();
+                }
+
+                std::string from_prodUniqueId;
+                if (from.find("prodUniqueId") != from.end()) {
+                    from_prodUniqueId = from["prodUniqueId"].get_str();
+                }
+
                 std::shared_ptr<DeviceInfo> from_obj(new DeviceInfo(from_deviceId, from_name, from_prodUniqueId));
                 user_return_data.from = from_obj;
             }
@@ -532,7 +540,7 @@ void ctn::CtnApiInternals::parseReadMessage(ReadMessageResult &user_return_data,
                 user_return_data.from = nullptr;
             }
 
-            user_return_data.message = pt.get<std::string>("data.message");
+            user_return_data.message = data["message"].get_str();
 #elif defined(COM_SUPPORT_LIB_POCO)
             Poco::JSON::Object::Ptr data = retObj->getObject("data");
 
@@ -577,12 +585,12 @@ void ctn::CtnApiInternals::parseRetrieveMessageContainer(RetrieveMessageContaine
 {
     try {
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-        boost::property_tree::ptree pt;
-        std::istringstream is(json_data);
+        json_spirit::mValue result;
+        json_spirit::read_string_or_throw(json_data, result);
 
-        read_json(is, pt);
+        json_spirit::mObject &retObj = result.get_obj();
 
-        std::string status = pt.get<std::string>("status");
+        std::string const &status = retObj["status"].get_str();
 #elif defined(COM_SUPPORT_LIB_POCO)
         Poco::JSON::Parser parser;
         Poco::Dynamic::Var result = parser.parse(json_data);
@@ -594,26 +602,27 @@ void ctn::CtnApiInternals::parseRetrieveMessageContainer(RetrieveMessageContaine
 
         if (status == "success") {
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-            user_return_data.blockchain.txid = pt.get<std::string>("data.blockchain.txid");
-            user_return_data.blockchain.isConfirmed = pt.get<bool>("data.blockchain.isConfirmed");
+            json_spirit::mObject &data = retObj["data"].get_obj();
 
-            try {
-                // if no elements throw an exception and return normally.
-                std::string storage = pt.get<std::string>("data.externalStorage");
+            json_spirit::mObject &blockchain = data["blockchain"].get_obj();
+
+            user_return_data.blockchain.txid = blockchain["txid"].get_str();
+            user_return_data.blockchain.isConfirmed = blockchain["isConfirmed"].get_bool();
+
+            if (data.find("externalStorage") != data.end()) {
+                json_spirit::mObject &externalStorage = data["externalStorage"].get_obj();
+
+                std::shared_ptr<StorageProviderDictionary> map_objPtr(new StorageProviderDictionary());
+
+                for (auto const &storageProvider : externalStorage) {
+                    (*map_objPtr)[storageProvider.first] = storageProvider.second.get_str();
+                }
+
+                user_return_data.externalStorage = map_objPtr;
             }
-            catch(...) {
+            else {
                 user_return_data.externalStorage = nullptr;
-                return; // done parsing.
             }
-
-            std::shared_ptr<StorageProviderDictionary> map_objPtr(new StorageProviderDictionary());
-
-            BOOST_FOREACH(boost::property_tree::ptree::value_type &v, pt.get_child("data.externalStorage"))
-            {
-                (*map_objPtr)[v.first.data()] = v.second.data();
-            }
-
-            user_return_data.externalStorage = map_objPtr;
 #elif defined(COM_SUPPORT_LIB_POCO)
             Poco::JSON::Object::Ptr data = retObj->getObject("data");
 
@@ -655,12 +664,12 @@ void ctn::CtnApiInternals::parseListMessages(ListMessagesResult &user_return_dat
 {
     try {
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-        boost::property_tree::ptree pt;
-        std::istringstream is(json_data);
+        json_spirit::mValue result;
+        json_spirit::read_string_or_throw(json_data, result);
 
-        read_json(is, pt);
+        json_spirit::mObject &retObj = result.get_obj();
 
-        std::string status = pt.get<std::string>("status");
+        std::string const &status = retObj["status"].get_str();
 #elif defined(COM_SUPPORT_LIB_POCO)
         Poco::JSON::Parser parser;
         Poco::Dynamic::Var result = parser.parse(json_data);
@@ -673,49 +682,78 @@ void ctn::CtnApiInternals::parseListMessages(ListMessagesResult &user_return_dat
         if (status == "success")
         {
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-            BOOST_FOREACH(boost::property_tree::ptree::value_type &v, pt.get_child("data.messages"))
-            {
-                boost::property_tree::ptree subtree = (boost::property_tree::ptree) v.second;
+            json_spirit::mObject &data = retObj["data"].get_obj();
+            
+            json_spirit::mArray &messages = data["messages"].get_array();
+            
+            for (json_spirit::mValue &entry : messages) {
+                json_spirit::mObject &message = entry.get_obj();
 
-                std::string messageId = subtree.get<std::string>("messageId");
-                std::string action = subtree.get<std::string>("action");
+                std::string const &messageId = message["messageId"].get_str();
+                std::string const &action = message["action"].get_str();
 
-                std::string direction = subtree.get<std::string>("direction","");
+                std::string direction;
+                if (message.find("direction") != message.end()) {
+                    direction = message["direction"].get_str();
+                }
 
-                std::shared_ptr<DeviceInfo> from_device_obj = nullptr;
-                std::string from_deviceId = subtree.get<std::string>("from.deviceId","");
-                if (!from_deviceId.empty()) {
-                    std::string from_name = subtree.get<std::string>("from.name","");
-                    std::string from_prodUniqueId = subtree.get<std::string>("from.prodUniqueId","");
+                std::shared_ptr<DeviceInfo> from_device_obj;
+                if (message.find("from") != message.end()) {
+                    json_spirit::mObject &from = message["from"].get_obj();
+
+                    std::string const &from_deviceId = from["deviceId"].get_str();
+
+                    std::string from_name;
+                    if (from.find("name") != from.end()) {
+                        from_name = from["name"].get_str();
+                    }
+
+                    std::string from_prodUniqueId;
+                    if (from.find("prodUniqueId") != from.end()) {
+                        from_prodUniqueId = from["prodUniqueId"].get_str();
+                    }
+
                     from_device_obj.reset(new DeviceInfo(from_deviceId, from_name, from_prodUniqueId));
                 }
 
-                std::shared_ptr<DeviceInfo> to_device_obj = nullptr;
-                std::string to_deviceId = subtree.get<std::string>("to.deviceId","");
-                if (!to_deviceId.empty()) {
-                    std::string to_name = subtree.get<std::string>("to.name","");
-                    std::string to_prodUniqueId = subtree.get<std::string>("to.prodUniqueId","");
+                std::shared_ptr<DeviceInfo> to_device_obj;
+                if (message.find("to") != message.end()) {
+                    json_spirit::mObject &to = message["to"].get_obj();
+
+                    std::string const &to_deviceId = to["deviceId"].get_str();
+
+                    std::string to_name;
+                    if (to.find("name") != to.end()) {
+                        to_name = to["name"].get_str();
+                    }
+
+                    std::string to_prodUniqueId;
+                    if (to.find("prodUniqueId") != to.end()) {
+                        to_prodUniqueId = to["prodUniqueId"].get_str();
+                    }
+
                     to_device_obj.reset(new DeviceInfo(to_deviceId, to_name, to_prodUniqueId));
                 }
-                
+
                 std::shared_ptr<bool> read_confirmation_enabled;
-                if (subtree.find("readConfirmationEnabled") != subtree.not_found()) {
-                    read_confirmation_enabled.reset(new bool(subtree.get<bool>("readConfirmationEnabled",false)));
+                if (message.find("readConfirmationEnabled") != message.end()) {
+                    read_confirmation_enabled.reset(new bool(message["readConfirmationEnabled"].get_bool()));
                 }
 
                 std::shared_ptr<bool> read;
-                if (subtree.find("read") != subtree.not_found()) {
-                    read.reset(new bool(subtree.get<bool>("read",false)));
+                if (message.find("read") != message.end()) {
+                    read.reset(new bool(message["read"].get_bool()));
                 }
 
-                std::string date = subtree.get<std::string>("date");
+                std::string const &date = message["date"].get_str();
 
                 std::shared_ptr<MessageDescription> msg_obj(new MessageDescription(messageId, action, direction, from_device_obj, to_device_obj, read_confirmation_enabled, read, date));
 
                 user_return_data.messageList.push_back(msg_obj);
             }
-            user_return_data.msgCount = pt.get<int>("data.msgCount",0);
-            user_return_data.countExceeded = pt.get<bool>("data.countExceeded",false);
+
+            user_return_data.msgCount = data["msgCount"].get_int();
+            user_return_data.countExceeded = data["countExceeded"].get_bool();
 #elif defined(COM_SUPPORT_LIB_POCO)
             Poco::JSON::Object::Ptr data = retObj->getObject("data");
 

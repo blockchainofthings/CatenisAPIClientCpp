@@ -30,16 +30,7 @@ const std::string TIME_STAMP_HDR = "x-bcot-timestamp";
 const int SIGN_VALID_DAYS = 7;
 
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-// Forward declare boost ptree
-namespace boost
-{
-    namespace property_tree
-    {
-        template < class Key, class Data, class KeyCompare >
-        class basic_ptree;
-        typedef basic_ptree< std::string, std::string, std::less<std::string> > ptree;
-    }
-}
+#include <json-spirit/json_spirit_value.h>
 #elif defined(COM_SUPPORT_LIB_POCO)
 // Forward declare Poco JSON object
 namespace Poco
@@ -82,7 +73,7 @@ public:
     
     CtnApiInternals(std::string device_id, std::string api_access_secret, std::string host, std::string port, std::string environment, bool secure, std::string version);
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-    void httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, boost::property_tree::ptree &request_data, std::string &response_data);
+    void httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, json_spirit::mValue const &reqData, std::string &response_data);
 #elif defined(COM_SUPPORT_LIB_POCO)
     void httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, Poco::JSON::Object &request_data, std::string &response_data);
 #endif

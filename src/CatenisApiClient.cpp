@@ -11,7 +11,7 @@
 #include <map>
 
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-#include <boost/property_tree/ptree.hpp>
+#include <json-spirit/json_spirit_value.h>
 #elif defined(COM_SUPPORT_LIB_POCO)
 #include <Poco/JSON/Object.h>
 #endif
@@ -29,12 +29,19 @@ void ctn::CtnApiClient::logMessage(LogMessageResult &data, std::string message, 
 
     // write request body
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-    boost::property_tree::ptree request_data;
+    json_spirit::mObject objData;
 
-    request_data.put("message", message);
-    request_data.put("options.encoding", option.encoding);
-    request_data.put("options.encrypt", option.encrypt);
-    request_data.put("options.storage", option.storage);
+    objData["message"] = message;
+
+    json_spirit::mObject objOptions;
+
+    objOptions["encoding"] = option.encoding;
+    objOptions["encrypt"] = option.encrypt;
+    objOptions["storage"] = option.storage;
+
+    objData["options"] = objOptions;
+
+    json_spirit::mValue request_data(objData);
 #elif defined(COM_SUPPORT_LIB_POCO)
     Poco::JSON::Object request_data;
 
@@ -60,15 +67,27 @@ void ctn::CtnApiClient::sendMessage(SendMessageResult &data, const Device &devic
 
     // write request body
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-    boost::property_tree::ptree request_data;
+    json_spirit::mObject objData;
 
-    request_data.put("targetDevice.id", device.device_id);
-    request_data.put("targetDevice.isProdUniqueId", device.is_prod_uniqueid);
-    request_data.put("message", message);
-    request_data.put("options.readConfirmation", option.readConfirmation);
-    request_data.put("options.encoding", option.encoding);
-    request_data.put("options.encrypt", option.encrypt);
-    request_data.put("options.storage", option.storage);
+    json_spirit::mObject objTargetDevice;
+
+    objTargetDevice["id"] = device.device_id;
+    objTargetDevice["isProdUniqueId"] = device.is_prod_uniqueid;
+
+    objData["targetDevice"] = objTargetDevice;
+
+    objData["message"] = message;
+
+    json_spirit::mObject objOptions;
+
+    objOptions["readConfirmation"] = option.readConfirmation;
+    objOptions["encoding"] = option.encoding;
+    objOptions["encrypt"] = option.encrypt;
+    objOptions["storage"] = option.storage;
+
+    objData["options"] = objOptions;
+
+    json_spirit::mValue request_data(objData);
 #elif defined(COM_SUPPORT_LIB_POCO)
     Poco::JSON::Object request_data;
 
@@ -102,7 +121,7 @@ void ctn::CtnApiClient::readMessage(ReadMessageResult &data, std::string message
     queries["encoding"] = encoding;
 
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-    boost::property_tree::ptree request_data;
+    json_spirit::mValue request_data;
 #elif defined(COM_SUPPORT_LIB_POCO)
     Poco::JSON::Object request_data;
 #endif
@@ -121,7 +140,7 @@ void ctn::CtnApiClient::retrieveMessageContainer(RetrieveMessageContainerResult 
     params[":messageId"] = message_id;
 
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-    boost::property_tree::ptree request_data;
+    json_spirit::mValue request_data;
 #elif defined(COM_SUPPORT_LIB_POCO)
     Poco::JSON::Object request_data;
 #endif
@@ -140,18 +159,18 @@ void ctn::CtnApiClient::listMessages(ListMessagesResult &data, std::string actio
     queries["action"] = action;
     queries["direction"] = direction;
     
-    if(from_device_ids != "") queries["fromDeviceIds"] = from_device_ids;
-    if(to_device_ids != "") queries["toDeviceIds"] = to_device_ids;
-    if(from_device_prod_ids != "") queries["fromDeviceProdUniqueIds"] = from_device_prod_ids;
-    if(to_device_prod_ids != "") queries["toDeviceProdUniqueIds"] = to_device_prod_ids;
+    if(!from_device_ids.empty()) queries["fromDeviceIds"] = from_device_ids;
+    if(!to_device_ids.empty()) queries["toDeviceIds"] = to_device_ids;
+    if(!from_device_prod_ids.empty()) queries["fromDeviceProdUniqueIds"] = from_device_prod_ids;
+    if(!to_device_prod_ids.empty()) queries["toDeviceProdUniqueIds"] = to_device_prod_ids;
     
     queries["readState"] = read_state;
     
-    if(start_date != "") queries["startDate"] = start_date;
-    if(endDate != "") queries["endDate"] = endDate;
+    if(!start_date.empty()) queries["startDate"] = start_date;
+    if(!endDate.empty()) queries["endDate"] = endDate;
 
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-    boost::property_tree::ptree request_data;
+    json_spirit::mValue request_data;
 #elif defined(COM_SUPPORT_LIB_POCO)
     Poco::JSON::Object request_data;
 #endif

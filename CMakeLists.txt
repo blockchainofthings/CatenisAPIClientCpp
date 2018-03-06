@@ -63,9 +63,9 @@ option(BUILD_SAMPLES "Build sample programs.")
 include_directories(include)
 
 if ("${COM_SUPPORT_LIB}" STREQUAL "BOOST_ASIO")
-    # Add components needed for Boost.asio: system, regex
-    hunter_add_package(Boost COMPONENTS system regex)
-    find_package(Boost CONFIG REQUIRED system regex)
+    # Add components needed for Boost.asio: system
+    hunter_add_package(Boost COMPONENTS system)
+    find_package(Boost CONFIG REQUIRED system)
 elseif ("${COM_SUPPORT_LIB}" STREQUAL "POCO")
     # Add components needed for Poco: Foundation, Net, JSON <— needed for linking
     # XML, Util, Crypto <— needed for the stand-alone final lib
@@ -79,10 +79,10 @@ find_package(OpenSSL REQUIRED)
 
 
 # Link and make lib
-add_library(tempCatenis src/CatenisApiClient.cpp include/CatenisApiClient.h src/CatenisApiInternals.cpp include/CatenisApiInternals.h include/CatenisApiException.h)
+add_library(tempCatenis src/CatenisApiClient.cpp include/CatenisApiClient.h src/CatenisApiInternals.cpp include/CatenisApiInternals.h include/CatenisApiException.h include/json-spirit/json_spirit_reader_template.h include/json-spirit/json_spirit_writer_template.h include/json-spirit/json_spirit_value.h include/json-spirit/json_spirit_writer_options.h include/json-spirit/json_spirit_error_position.h)
 
 if ("${COM_SUPPORT_LIB}" STREQUAL "BOOST_ASIO")
-    target_link_libraries(tempCatenis Boost::system Boost::regex OpenSSL::SSL OpenSSL::Crypto)
+    target_link_libraries(tempCatenis Boost::system OpenSSL::SSL OpenSSL::Crypto)
 elseif ("${COM_SUPPORT_LIB}" STREQUAL "POCO")
     target_link_libraries(tempCatenis Poco::Foundation Poco::Net Poco::JSON Poco::NetSSL OpenSSL::SSL OpenSSL::Crypto)
 
@@ -102,7 +102,7 @@ endif()
 
 # Merge all libs into one lib (the first lib added has to be the lib created: tempCatenis)
 if ("${COM_SUPPORT_LIB}" STREQUAL "BOOST_ASIO")
-    merge_static_libs(CatenisAPIClient tempCatenis Boost::system Boost::regex OpenSSL::SSL OpenSSL::Crypto)
+    merge_static_libs(CatenisAPIClient tempCatenis Boost::system OpenSSL::SSL OpenSSL::Crypto)
 elseif ("${COM_SUPPORT_LIB}" STREQUAL "POCO")
     merge_static_libs(CatenisAPIClient tempCatenis Poco::Foundation Poco::Net Poco::JSON Poco::NetSSL Poco::XML Poco::Util Poco::Crypto OpenSSL::SSL OpenSSL::Crypto)
 endif()
