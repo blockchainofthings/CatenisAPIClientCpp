@@ -23,12 +23,21 @@
 #include <openssl/evp.h>
 
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/version.hpp>
+#include <boost/asio/connect.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/ssl/error.hpp>
+#include <boost/asio/ssl/stream.hpp>
+/*#include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>*/
 #include <json-spirit/json_spirit_reader_template.h>
 #include <json-spirit/json_spirit_writer_template.h>
 
 using boost::asio::ip::tcp;
+namespace http = boost::beast::http;
+namespace ssl = boost::asio::ssl;
 #elif defined(COM_SUPPORT_LIB_POCO)
 #include <Poco/JSON/Object.h>
 #include <Poco/JSON/Stringifier.h>
@@ -106,108 +115,99 @@ void ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
     try
     {
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-        std::string prefix = (this->secure_ ? "https" : "http");
-        
-        // Get a list of endpoints corresponding to the server name
-        boost::asio::io_service io_service;
-        tcp::resolver resolver(io_service);
-        tcp::resolver::query query(headers["host"], prefix);
-        if(this->port_ != "") query = tcp::resolver::query(headers["host"], this->port_);
-        tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
-        
-        // Declare and init both sockets, this is a fix due to boost.asio memory bug in windows
-        // HTTPS
-        boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
-        boost::asio::ssl::stream<tcp::socket> ssl_socket(io_service, ctx);
-        // http
-        tcp::socket http_socket(io_service);
-        
-        if(this->secure_)
-        {
-            // Try each endpoint until successful connection
-            boost::asio::connect(ssl_socket.lowest_layer(), endpoint_iterator);
-            
-            // Handshake with server
-            ssl_socket.set_verify_mode(boost::asio::ssl::verify_none);
-            ssl_socket.handshake(boost::asio::ssl::stream_base::handshake_type::client);
+        boost::asio::io_context ioc;
+        ssl::context ctx(ssl::context::sslv23_client);
+
+        tcp::socket socket(ioc);
+        ssl::stream<tcp::socket> ssl_stream(ioc, ctx);
+
+        // Look up the domain name
+        tcp::resolver resolver(ioc);
+        auto const results = resolver.resolve(host_, !port_.empty() ? port_ : (secure_ ? "https" : "http"));
+
+        if (secure_) {
+            // Set SNI Hostname (many hosts need this to handshake successfully)
+            if(! SSL_set_tlsext_host_name(ssl_stream.native_handle(), host_.c_str()))
+            {
+                boost::system::error_code ec(static_cast<int>(::ERR_get_error()), boost::asio::error::get_ssl_category());
+                throw boost::system::system_error(ec);
+            }
+
+            // Open connection
+            boost::asio::connect(ssl_stream.lowest_layer(), results.begin(), results.end());
+
+            // Perform the SSL handshake
+            ssl_stream.set_verify_mode(boost::asio::ssl::verify_none);
+            ssl_stream.handshake(ssl::stream_base::client);
         }
-        else
-        {
-            // HTTP
-            // Try each endpoint until we successfully establish a connection
-            boost::asio::connect(http_socket, endpoint_iterator);
+        else {
+            // Open the connection
+            boost::asio::connect(socket, results.begin(), results.end());
         }
-        
-        // Form the request
-        boost::asio::streambuf request;
-        std::ostream request_stream(&request);
-        
-        // Use HTTP 1.0 for now, since persistent connections not needed yet
-        request_stream << verb << " " << methodpath << " HTTP/1.0\r\n";
-        for(auto const &data : headers)
+
+        // Prepare HTTP request
+        http::request<http::string_body> req(verb == "POST" ? http::verb::post : http::verb::get, methodpath, 11);
+
+        // Add headers
+        for (auto const &header : headers)
         {
-            request_stream << data.first << ": " << data.second << "\r\n";
+            req.set(header.first, header.second);
         }
-        // Add extra headers if POST
-        if(verb == "POST")
-        {
-            request_stream << "Content-Type: application/json; charset=utf-8\r\n";
-            request_stream << "Content-Length: " << payload_json.length() << "\r\n";
-        }
-        
-        // "Connection: close" header so that the server will close the socket after transmitting the response
-        request_stream << "Connection: close\r\n\r\n";
-        
+
+        req.set(http::field::content_type, "application/json; charset=utf-8");
+        req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+        req.set(http::field::connection, "close");
+
         // add payload
-        request_stream << payload_json;
-        
-        // Send the request
-        if(this->secure_) boost::asio::write(ssl_socket, request);
-        else boost::asio::write(http_socket, request);
-        
-        // Check that response is OK.
-        boost::asio::streambuf response_buf;
-        boost::system::error_code error;
-        if(this->secure_) boost::asio::read_until(ssl_socket, response_buf, "\r\n");
-        else boost::asio::read_until(http_socket, response_buf, "\r\n");
-        std::istream response_stream(&response_buf);
-        
-        // Check the stream at each point.
-        if (!response_stream) 
-            throw CatenisClientError("Invalid HTTP response");
+        req.body() = payload_json;
+        req.prepare_payload();
 
-        std::string http_version;
-        response_stream >> http_version;
-        if (http_version.substr(0, 5) != "HTTP/")
-            throw CatenisClientError("Invalid HTTP response");
+        // Send the HTTP request
+        if (secure_)
+            http::write(ssl_stream, req);
+        else
+            http::write(socket, req);
 
-        int status_code;
-        if (!response_stream) 
-            throw CatenisClientError("Invalid HTTP response");
-        response_stream >> status_code;
+        // Prepare to receive response.
+        boost::beast::flat_buffer buffer;
+        http::response<http::string_body> res;
 
-        std::string status_message;
-        if (!response_stream) 
-            throw CatenisClientError("Invalid HTTP response");
-        std::getline(response_stream, status_message, '\r');  // "protocol string ends with \r\n".
+        // Receive the HTTP response
+        if (secure_)
+            http::read(ssl_stream, buffer, res);
+        else
+            http::read(socket, buffer, res);
 
-        // Erase white-space from beginning of string
-        status_message.erase(0, 1);
-        
-        // Read all headers and flush buffer
-        int headerSize;
-        if(this->secure_) headerSize = boost::asio::read_until(ssl_socket, response_buf, "\r\n\r\n");
-        else headerSize = boost::asio::read_until(http_socket, response_buf, "\r\n\r\n");
-        response_buf.consume(headerSize);
-        
-        // Read until EOF or Short read,
-        if(this->secure_) boost::asio::read(ssl_socket, response_buf, boost::asio::transfer_all(), error);
-        else boost::asio::read(http_socket, response_buf, boost::asio::transfer_all(), error);
-        if (error != boost::asio::error::eof && error !=  boost::system::error_code(ERR_PACK(ERR_LIB_SSL, 0, SSL_R_SHORT_READ), boost::asio::error::get_ssl_category()))
-            throw boost::system::system_error(error);
-        
-        // Write response data
-        response_data = std::string(std::istreambuf_iterator<char>(response_stream), std::istreambuf_iterator<char>());
+        // Get response and copy to response_data
+        response_data = res.body();
+
+        unsigned int status_code = res.result_int();
+        std::string status_message = res.reason().to_string();
+
+        // Close connection
+        if (secure_) {
+            // Gracefully close the stream
+            boost::system::error_code ec;
+            ssl_stream.shutdown(ec);
+
+            if(ec == boost::asio::error::eof || ec == ssl::error::stream_errors::stream_truncated) {
+                //std::cerr << ">>>>>> SSL stream shutdown failed: " << ec.message() << std::endl;
+                // Rationale: http://stackoverflow.com/questions/25587403/boost-asio-ssl-async-shutdown-always-finishes-with-an-error
+                ec.assign(0, ec.category());
+            }
+
+            if(ec)
+                throw boost::system::system_error(ec);
+        }
+        else {
+            // Gracefully close the socket
+            boost::system::error_code ec;
+            socket.shutdown(tcp::socket::shutdown_both, ec);
+
+            // not_connected happens sometimes so don't bother reporting it.
+            if (ec && ec != boost::system::errc::not_connected)
+                throw boost::system::system_error(ec);
+        }
 #elif defined(COM_SUPPORT_LIB_POCO)
         // Contruct url
         std::string prefix = (this->secure_ ? "https://" : "http://");

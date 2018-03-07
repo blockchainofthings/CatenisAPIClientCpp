@@ -21,8 +21,8 @@ set(HUNTER_CONFIGURATION_TYPES Release)
 include("cmake/HunterGate.cmake")
 if ("${COM_SUPPORT_LIB}" STREQUAL "BOOST_ASIO")
     HunterGate(
-            URL "https://github.com/ruslo/hunter/archive/v0.19.7.tar.gz"
-            SHA1 "e83786da74f703099fce44a4c021b5d3e5fc3b41"
+            URL "https://github.com/ruslo/hunter/archive/v0.20.14.tar.gz"
+            SHA1 "18cdbf5c47abdda437c73bf5437b7c3c65afe47c"
             FILEPATH "${CMAKE_SOURCE_DIR}/cmake/HunterConfig_BoostAsio.cmake"
     )
 elseif ("${COM_SUPPORT_LIB}" STREQUAL "POCO")
