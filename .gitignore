@@ -39,3 +39,7 @@ _builds/
 
 # Xcode
 *.xcodeproj
+
+# CLion
+.idea
+cmake-build-*

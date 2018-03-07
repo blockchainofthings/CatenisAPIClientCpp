@@ -3,30 +3,24 @@
 //  CatenisAPIClientCpp
 //
 //  Created by Sungwoo Bae on 5/25/17.
+//  Modifications by R. Benson Evans on 2/20/2018.
 //
 #ifndef __CATENISAPICLIENT_H__
 #define __CATENISAPICLIENT_H__
 
 #include <string>
-#include <map>
 #include <ctime>
-
-#include <Poco/JSON/Object.h>
+#include <list>
+#include <map>
 
 // Version specific constants
-const std::string API_PATH = "/api/";
-const std::string SIGN_VERSION_ID = "CTN1";
-const std::string SIGN_METHOD_ID = "CTN1-HMAC-SHA256";
-const std::string  SCOPE_REQUEST = "ctn1_request";
-const std::string TIME_STAMP_HDR = "x-bcot-timestamp";
-const std::string API_VERSION = "0.3";
-const int SIGN_VALID_DAYS = 7;
+const std::string DEFAULT_API_VERSION = "0.5";
 
 namespace ctn
 {
-
+    
 /*
- * Struct to contain options for main api calls
+ * Message options structure
  *
  * @member encoding : Value identifying the encoding of the message
  * ["utf8"|"base64"|"hex"]
@@ -34,132 +28,264 @@ namespace ctn
  * @member storage : Value identifying where the message should be stored
  * [“auto"|"embedded"|"external"]
  */
-struct MethodOption
+struct MessageOptions
 {
     std::string encoding;
     bool encrypt;
     std::string storage;
+    bool readConfirmation;
     
-    // Default contructor with default values for members
-    MethodOption()
+    // Default constructor with default values for members
+    MessageOptions()
     {
         encoding = "utf8";
         encrypt = true;
         storage = "auto";
+        readConfirmation = false;
     }
 
-    MethodOption(std::string encoding, bool encrypt, std::string storage)
+    MessageOptions(std::string encoding, bool encrypt, std::string storage, bool read_confirmation = false)
     {
         this->encoding = encoding;
         this->encrypt = encrypt;
         this->storage = storage;
+        this->readConfirmation = read_confirmation;
     }
 };
     
 /*
- * Struct to contain device information
+ * Catenis virtual device structure
  *
- * @member id : ID of target device. Should be Catenis device ID unless isProdUniqueId is true
+ * @member id : ID of device. Should be Catenis device ID unless isProdUniqueId is true
  * @member isProdUniqueId : Indicate whether supply ID is a product unique ID
  */
 struct Device
 {
-    std::string id;
+    std::string device_id;
     bool is_prod_uniqueid;
     
-    Device(std::string id, bool is_prod_uniqueid = false)
+    Device(std::string device_id, bool is_prod_uniqueid = false)
     {
-        this->id = id;
+        this->device_id = device_id;
         this->is_prod_uniqueid = is_prod_uniqueid;
     }
 };
+
+/*
+ * Log Message API method response structure
+ *
+ * @member messageId : ID of logged message.
+ */
+struct LogMessageResult
+{
+	std::string messageId;
+};
+
+/*
+ * Send Message API method response structure
+ *
+ * @member messageId : ID of sent message.
+ */
+struct SendMessageResult
+{
+	std::string messageId;
+};
+
+/*
+ * Device info structure
+ *
+ * @member deviceId : Catenis ID of device.
+ * @member name : Device name.
+ * @member prodUniqueId : Device's product unique ID.
+ */
+
+struct DeviceInfo
+{
+    std::string deviceId;
+    std::string name;
+    std::string prodUniqueId;
+
+    DeviceInfo(std::string device_id, std::string device_name, std::string prod_unique_id)
+        : deviceId(device_id), name(device_name), prodUniqueId(prod_unique_id) {}
+    ~DeviceInfo() {}
+};
+
+/*
+ * Read Message API method response structure
+ *
+ * @member action : the action performed on the message: 'log' or 'send'.
+ * @member from : Catenis ID/Name/ProdUniqueId of the origin device.
+ * @member message : the message read.
+ */
+struct ReadMessageResult
+{
+	std::string action;
+    std::shared_ptr<DeviceInfo> from;
+	std::string message;
+};
+
+/*
+ * Blockchain transaction info structure
+ *
+ * @member txid : ID of blockchain transaction.
+ * @member isConfirmed : Indicates whether transaction is confirmed.
+ */
+struct TransactionInfo
+{
+    std::string txid;
+    bool isConfirmed;
+};
+
+// Dictionary holding external storage reference by storage provider name
+typedef std::map<std::string, std::string> StorageProviderDictionary;
+
+/*
+ * Read Message API method response structure
+ *
+ * @member blockchain: TXID of blockchain transaction where the message is recorded.
+ * @member externalStorage : [optional] only returned if message is stored in an external storage.
+ * @member storageProviderName : Key: storage provider name.
+ */
+struct RetrieveMessageContainerResult
+{
+    TransactionInfo blockchain;
+    std::shared_ptr<StorageProviderDictionary> externalStorage;
+};
+
+/*
+ * Message description structure
+ *
+ * @member messageId : ID of message.
+ * @member action : Action performed: 'log' or 'send'.
+ * @member direction : Direction of 'send' message: 'inbound' or 'outbound'.
+ * @member from : Catenis ID/Name/ProdUniqueId of the sending device.
+ * @member to : Catenis ID/Name/ProdUniqueId of the target device.
+ * @member readConfirmationEnabled : Indicates whether the message had been sent with read-confirmation enabled.
+ * @member read : Indicates whether the message had already been read.
+ * @member date : ISO 8601 formatted date and time when message was logged, sent or received.
+ */
+struct MessageDescription
+{
+    std::string messageId;
+    std::string action;
+    std::string direction;
+    std::shared_ptr<DeviceInfo> from;
+    std::shared_ptr<DeviceInfo> to;
+    std::shared_ptr<bool> readConfirmationEnabled;
+    std::shared_ptr<bool> read;
+    std::string date;
+
+    MessageDescription(std::string message_id, std::string action_arg, std::string direction_arg, 
+        std::shared_ptr<DeviceInfo> from_arg, std::shared_ptr<DeviceInfo> to_arg,
+        std::shared_ptr<bool> &read_confirmation_enabled, std::shared_ptr<bool> read_arg, std::string date_arg)
+            : messageId(message_id), action(action_arg), direction(direction_arg), from(from_arg), to(to_arg),
+            readConfirmationEnabled(read_confirmation_enabled), read(read_arg), date(date_arg) {}
+    ~MessageDescription() {}
+};
+
+/*
+ * List Messages API method response structure
+ *
+ * @member messageList : List of structures.
+ * @member msgCount : Number of messages for which information is returned.
+ * @member countExceeded : Was the actual number of messages greater than the max returnable.
+ */
+struct ListMessagesResult
+{
+    std::list< std::shared_ptr<MessageDescription> > messageList; 
+	int msgCount;
+	bool countExceeded;
+};
+
+// Forward declare internals
+class CtnApiInternals;
 
 class CtnApiClient
 {
 
 private:
-
-    std::string device_id_;
-    std::string api_access_secret_;
-
-    std::string host_;
-    std::string subdomain_;
-    bool secure_;
-    std::string version_;
-
-    std::string root_api_endpoint_;
-    time_t last_signdate_;
-    std::string last_signkey_;
     
-    bool httpRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, Poco::JSON::Object &request_data, std::string &response_data);
+    /* Pointer to object that handles all internal functionalities of CtnApiClient
+     *
+     * @see ctn::CtnApiInternals
+     */
+    CtnApiInternals *internals_;
     
-    void signRequest(std::string verb, std::string endpoint, std::map<std::string, std::string> &headers, std::string payload, time_t now);
-    std::string hashData(const std::string str);
-    std::string signData(const std::string key, const std::string data, bool hex_encode = false);
-
 public:
     
     /* Constructor
      *
      * @param[in] device_id : Catenis device ID
      * @param[in] api_access_secret : Catenis device's API access secret
-     * @param[in] host (optional, default: catenis.io) :  Host name (with optional port) of target Catenis API server
-     * @param[in] environment (optional, default: 'prod') :  Environment of target Catenis API server
+     * @param[in] host (optional, default: catenis.io) :  Host name of target Catenis API server
+     * @param[in] port (optional, default: "") : Port of target to connect
+     * @param[in] environment (optional, default: "prod") :  Environment of target Catenis API server
      * ["prod"|"beta"]
      * @param[in] secure (optional, default: true) :  Indicates whether a secure connection (HTTPS) should be used
-     * @param[in] version (optional, default: API_VERSION) :  Version of Catenis API to target
+     * @param[in] version (optional, default: DEFAULT_API_VERSION) :  Version of Catenis API to target
      */
-     CtnApiClient(std::string device_id, std::string api_access_secret, std::string host = "catenis.io", std::string environment = "prod", bool secure = true, std::string version = API_VERSION);
+    CtnApiClient(std::string device_id, std::string api_access_secret, std::string host = "catenis.io", std::string port = "",std::string environment = "prod", bool secure = true, std::string version = DEFAULT_API_VERSION);
+    
+    /* Destructor */
+    ~CtnApiClient();
     
     /*
      * Log a message
      *
-     * @param[in] message : The messsage to store
      * @param[out] data : The data to parse response into
+     * @param[in] message : The messsage to store
      * @param[in] option (optional) :  Options to log message
      *
      * @return true if no error has occured.
      *
-     * @see ctn::MethodOption
+     * @see ctn::LogMessageResult
+     * @see ctn::MessageOptions
      */
-    bool logMessage(std::string message, std::string &data, const MethodOption &option = MethodOption());
+    void logMessage(LogMessageResult &data, std::string message, const MessageOptions &option = MessageOptions());
     
     /*
      * Send a message
      *
+     * @param[out] data : The data to parse response into
      * @param[in] device : Device that receives message
      * @param[in] message : The messsage to send
-     * @param[out] data : The data to parse response into
      * @param[in] option (optional) :  Options to send message
      *
      * @return true if no error has occured.
      *
+     * @see ctn::SendMessageResult
      * @see ctn::Device
-     * @see ctn::MethodOption
+     * @see ctn::MessageOptions
      */
-    bool sendMessage(const Device &device, std::string message, std::string &data, const MethodOption &option = MethodOption());
+    void sendMessage(SendMessageResult &data, const Device &device, std::string message, const MessageOptions &option = MessageOptions());
     
     /*
      * Read a message
      *
-     * @param[in] message_id : ID of message to read
      * @param[out] data : The data to parse response into
+     * @param[in] message_id : ID of message to read
      * @param[in] encoding (optional, default: "utf8") :  The encoding that should be used for the returned message
      * ["utf8"|"base64"|"hex"]
      *
      * @return true if no error has occured.
+     *
+     * @see ctn::ReadMessageResult
+     *
      */
-    bool readMessage(std::string message_id, std::string &data, std::string encoding = "utf8");
+    void readMessage(ReadMessageResult &data, std::string message_id, std::string encoding = "utf8");
     
     /*
      * Retrieve message container
      *
-     * @param[in] message_id : ID of message to retrieve container info
      * @param[out] data : The data to parse response into
+     * @param[in] message_id : ID of message to retrieve container info
      *
      * @return true if no error has occured.
+     *
+     * @see ctn::RetrieveMessageContainer
+     *
      */
-    bool retrieveMessageContainer(std::string message_id, std::string &data);
+    void retrieveMessageContainer(RetrieveMessageContainerResult &data, std::string message_id);
     
     /*
      * Retrieves a list of message entries filtered by a given criteria
@@ -179,12 +305,13 @@ public:
      * @param[in] end_date (optional) : ISO 8601 formatted date and time specifying the upper boundary
      *
      * @return true if no error has occured.
+     *
+     * @see ctn::ListMessagesResult
+     *
      */
-    bool listMessages(std::string &data, std::string action = "any", std::string direction = "any", std::string from_device_ids = "", std::string to_device_ids = "", std::string from_device_prod_ids = "", std::string to_device_prod_ids = "", std::string read_state = "any", std::string start_date = "", std::string endDate = "");
-    
+    void listMessages(ListMessagesResult &data, std::string action = "any", std::string direction = "any", std::string from_device_ids = "", std::string to_device_ids = "", std::string from_device_prod_ids = "", std::string to_device_prod_ids = "", std::string read_state = "any", std::string start_date = "", std::string endDate = "");
 };
 
 }
-
 
 #endif  // __CATENISAPICLIENT_H__
