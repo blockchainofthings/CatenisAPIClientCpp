@@ -1,136 +1,196 @@
-# Catenis API C++ Client: Boost Asio
-This library lets C++ developers access the Catenis API services with ease. The current installation has been tested on Mac, Linux, and Windows systems.
+# Catenis API C++ Client
 
-## Available Branches
-1. poco : Uses the Poco network library to call API methods.
-    - Recommended for normal projects that only use the standard functionalities of the Catenis API Methods 
-    (More reliable and easy to use)
-2. boostAsio : Uses the Boost.Asio network library to call API methods.
-    - Recommended for projects that require low level I/O programming 
-    (More flexibility but complicated)
+This C++ library is used to make it easier to access the Catenis Enterprise API services from C++ programs.
 
-## Building
+This current release (1.0.0) targets version 0.5 of the Catenis Enterprise API.
 
-### Prerequisites:
+## Communication support library
 
-* CMake (Available from https://cmake.org/download/)
-    - Required versions 3.0.0 and up
+This library is available in two varieties depending on the supporting library used for handling communication related 
+operations: [Boost Asio](http://www.boost.org/doc/libs/1_66_0/doc/html/boost_asio.html), or [Poco](https://pocoproject.org/docs/index.html).
+
+* **NOTE**: the Boost Asio library is not used directly by the Catenis API C++ client library, but rather via the new [Boost
+Beast](http://www.boost.org/doc/libs/1_66_0/libs/beast/doc/html/index.html) library, which provides support for both HTTP and WebSocket communication.
+
+## Development
+
+### Build prerequisites
+
+* CMake (available [here](https://cmake.org/download/))
+    - Version 3.0.0 or later.
 * C++ compiler
-    - Mac OSX https://developer.apple.com/xcode/
-        - Must install Xcode command line tools afterwards by running
+    - macOS: [Xcode](https://developer.apple.com/xcode/)
+        - Note: Xcode command line tools must be installed, which can be done by issuing the following command:
         ```shell
         xcode-select --install
         ```
-    - Linux   http://gcc.gnu.org/
-    - Windows https://www.visualstudio.com/vs/community/
-* Perl (Available from https://www.perl.org/get.html)
+    - Linux: [Gnu GCC](http://gcc.gnu.org/)
+    - Windows: [Visual Studio](https://www.visualstudio.com/vs/community/)
+* Perl (available [here](https://www.perl.org/get.html))
     - Perl is needed on WINDOWS for building the OpenSSL library
 
-### Setting External Library Directory:
+### External libraries
 
-This library uses the C++ package manager [Hunter](https://github.com/ruslo/hunter) to download and build required external libraries. 
-You may set the environment variable HUNTER_ROOT to direct where the external libraries will be downloaded.
-If not specified, the external libraries will be downloaded in ~/.hunter
-* If the directory is specified, the path MUST NOT have spaces.
+The C++ package manager [Hunter](https://github.com/ruslo/hunter) is used to download and build required external libraries.
 
-### Build Steps:
+You may set the environment variable ```HUNTER_ROOT``` to select where the downloaded external libraries will be stored.
+If not specified, the default directory ```~/.hunter``` is used.
+
+* **NOTE**: the path of the specified directory **MUST NOT** have spaces.
+
+### Build steps
 
 From the project's root directory, issue the following commands to build.
-Note that when building for the first time, it will take around 10 minutes to download and build the external libraries. 
+
+* **NOTE**: when building for the first time, it will take several minutes to download and build the external libraries. 
 
 ```shell
-cmake -H. -B_builds -DHUNTER_STATUS_DEBUG=ON -DCMAKE_BUILD_TYPE=Release
-cmake --build _builds --config Release
+cmake -H. -B<build_dir> -DHUNTER_STATUS_DEBUG=ON -DCMAKE_BUILD_TYPE=<build_type> -DCOM_SUPPORT_LIB=<com_support_lib> -DBUILD_SAMPLES=<samples_opt>
+cmake --build <build_dir> --config <build_type>
 ```
+Where:
+* ```<build_dir>``` - Designates a directory where the build outputs should be stored.
+* ```<build_type>``` - Determines the type of build. Can be either ```Debug``` or ```Release```.
+* ```<com_support_lib>``` - Selects the communication support library to use. Can be either ```BOOST_ASIO``` or ```POCO```.
+* ```<samples_opt>``` - Controls whether the sample application (CmdSample) should be built. Can be either ```ON``` or ```OFF```.
 
-All build files will be located in the _builds directory.
-
-#### Building Sample Programs:
-
-A command line sample program is located within the samples folder. To build this with the library, issue a command similar to the previous one but with the BUILD_SAMPLES flag.
-
-```shell
-cmake -H. -B_builds -DHUNTER_STATUS_DEBUG=ON -DCMAKE_BUILD_TYPE=Release -DBUILD_SAMPLES=ON
-cmake --build _builds --config Release
-```
+The main product of the build is self-contained static library named CatenisAPIClient &mdash; the actual library filename
+varies according to the target OS.
 
 ## Usage
 
-### Link the library
+Add the ```CatenisApiClient.h``` header file to your source code and link it with the CatenisAPIClient library.
 
-A static library file CatenisAPIClient will be in the _builds directory. Link the library with your source code and include the header.
-
-```shell
-#include "CatenisApiClient.h"
-```
-
-* Linux
-    - Linking the library on Linux will need additional linker flags. 
-        + -pthread 
-        + -ldl
-
-Please read into the header file for more detailed usage information on the library.
+* **NOTE**: when linking the library on Linux, the additional linker flags are required: 
+    + ```-pthread``` 
+    + ```-ldl```
 
 ### Instantiate the client
 
-```shell
+```cpp
+#include "CatenisApiClient.h"
+
 ctn::CtnApiClient ctnApiClient(device_id, api_access_secret, "catenis.io", "", "beta");
-```
-
-### Set method options and declare response data
-
-```shell
-ctn::MethodOption options("utf8", true, "auto");
-std::string response_data; // this is where the http response will be stored
 ```
 
 ### Logging (storing) a message to the blockchain
 
 Use the pre-created method option.
 
-```shell
-ctnApiClient.logMessage(message, response_data, options);
-```
+```cpp
+// Define message options - encoding: utf8, encrypt: true, storage: embedded
+ctn::MessageOptions msgOpts("utf8", true, "embedded");
 
-Or contruct one within the method call.
+// Define structure to receive returned data
+ctn::LogMessageResult data;
 
-```shell
-ctnApiClient.logMessage(message, response_data, ctn::MethodOption("utf8", true, "auto"));
+try {
+    // Call the API method
+    client.logMessage(data, message, msgOpts);
+}
+catch (ctn::CatenisAPIException &errObject) {
+    std::cerr << errObject.getErrorDescription() << std::endl;
+}
 ```
 
 ### Sending a message to another device
 
 ```shell
-ctn::Device device(device_id, false);
-ctnApiClient.sendMessage(device, message, response_data, options);
-```
+// Define target virtual device
+ctn::Device targetDevice(target_device_id)
 
-You may also contruct the device within the method call.
+// Define message options - encoding: utf8, encrypt: true, storage: embedded, readConfirmation: true
+ctn::MessageOptions msgOpts("utf8", true, "embedded", true);
 
-```shell
-ctnApiClient.sendMessage(ctn::Device(device_id), message, response_data, options);
+// Define structure to receive returned data
+ctn::SendMessageResult data;
+
+try {
+    // Call the API method
+    client.sendMessage(data, message, targetDevice, msgOpts);
+}
+catch (ctn::CatenisAPIException &errObject) {
+    std::cerr << errObject.getErrorDescription() << std::endl;
+}
 ```
 
 ### Reading a message
 
 ```shell
-ctnApiClient.readMessage(message_id, response_data, "utf8")
+// Define structure to receive returned data
+ctn::ReadMessageResult data;
+
+try {
+    // Call the API method
+    client.readMessage(data, message_id, "utf8");
+}
+catch (ctn::CatenisAPIException &errObject) {
+    std::cerr << errObject.getErrorDescription() << std::endl;
+}
 ```
 
 ### Retrieving information about a message's container
 
 ```shell
-ctnApiClient.retrieveMessageContainer(message_id, response_data);
+// Define structure to receive returned data
+ctn::RetrieveMessageContainerResult data;
+
+try {
+    // Call the API method
+    client.retrieveMessageContainer(data, message_id);
+}
+catch (ctn::CatenisAPIException &errObject) {
+    std::cerr << errObject.getErrorDescription() << std::endl;
+}
 ```
 
 ### List messages
 
 ```shell
-ctnApiClient.listMessages(response_data);
+// Define structure to receive returned data
+ctn::ListMessagesResult data;
+
+try {
+    // Call the API method - list unread messages received since January 1st, 2018
+    client.listMessages(data, "send", "inbound", "", "", "", "", "unread", "2018-01-01T00:00:00Z");
+}
+catch (ctn::CatenisAPIException &errObject) {
+    std::cerr << errObject.getErrorDescription() << std::endl;
+}
 ```
+
+## Error handling
+
+Two types of error can take place when calling API methods: client or API error.
+
+They can be differentiated by the type of object thrown.
+
+#### Client error
+
+```cpp
+class CatenisClientError : public CatenisAPIException {
+    std::string getErrorMessage();
+    std::string getErrorDescription();
+}
+```
+
+The ```getErrorMessage()``` method can be used to retrieve the associated error message, whilst the ```getErrorDescription()```
+method can be used to get a complete error description.
+
+#### API error
+
+```cpp
+class CatenisAPIError : public CatenisAPIException {
+    int getHttpStatusCode();
+    std::string getErrorMessage();
+    std::string getErrorDescription();
+}
+```
+
+It has one additional method, ```getHttpStatusCode()```, which can be used to get the returned HTTP status code.
 
 ## License
 
 This C++ library is released under the [MIT License](LICENSE). Feel free to fork, and modify!
 
-Copyright © 2017, Blockchain of Things Inc.
+Copyright © 2018, Blockchain of Things Inc.
