@@ -12,6 +12,7 @@
 #include <ctime>
 #include <list>
 #include <map>
+#include <memory>
 
 // Version specific constants
 const std::string DEFAULT_API_VERSION = "0.5";
