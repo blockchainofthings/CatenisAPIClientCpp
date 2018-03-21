@@ -837,3 +837,61 @@ void ctn::CtnApiInternals::parseListMessages(ListMessagesResult &user_return_dat
         throw CatenisClientError("Unexpected returned data from List Messages API method");
     }
 }
+
+// Private Method.
+void ctn::CtnApiInternals::parseListPermissionEvents(ListPermissionEventsResult &user_return_data, std::string json_data)
+{
+	try {
+#if defined(COM_SUPPORT_LIB_BOOST_ASIO)
+		json_spirit::mValue result;
+		json_spirit::read_string_or_throw(json_data, result);
+
+		json_spirit::mObject &retObj = result.get_obj();
+
+		std::string const &status = retObj["status"].get_str();
+#elif defined(COM_SUPPORT_LIB_POCO)
+		Poco::JSON::Parser parser;
+		Poco::Dynamic::Var result = parser.parse(json_data);
+
+		Poco::JSON::Object::Ptr retObj = result.extract<Poco::JSON::Object::Ptr>();
+
+		std::string status = retObj->getValue<std::string>("status");
+#endif
+
+		if (status == "success") {
+#if defined(COM_SUPPORT_LIB_BOOST_ASIO)
+			json_spirit::mObject &data = retObj["data"].get_obj();
+			
+
+			//user_return_data.permissionEventsList = nullptr;
+			//user_return_data.event_name = data["event_name"].get_str();
+
+#elif defined(COM_SUPPORT_LIB_POCO)
+			Poco::JSON::Object::Ptr data = retObj->getObject("data");		
+
+			//For TESTING
+			std::cout << json_data << std::endl;
+			//Poco::DynamicStruct ds = *data;
+			//Poco::DynamicStruct collection = ds["data"].extract<Poco::DynamicStruct>();
+
+			//for (auto it = collection.begin(); it != collection.end(); ++it)
+			//{
+				//std::cout << it->second.toString().c_str() << std::endl;
+			//}
+
+			//for (std::size_t idx = 0, limit = data->size(); idx < limit; idx++) {
+
+			//}
+
+			//user_return_data.permissionEventsList = json_data;
+			//user_return_data.event_name = data->getValue<std::string>("event_name");
+#endif
+		}
+		else {
+			throw CatenisClientError("Unexpected - returned data from List Permission Events API method");
+		}
+	}
+	catch (...) {
+		throw CatenisClientError("Unexpected + returned data from List Permission Events API method");
+	}
+}

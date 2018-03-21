@@ -84,6 +84,7 @@ public:
     void parseReadMessage(ReadMessageResult &user_return_data, std::string json_data);
     void parseRetrieveMessageContainer(RetrieveMessageContainerResult &user_return_data, std::string json_data);
     void parseListMessages(ListMessagesResult &user_return_data, std::string json_data);
+	void parseListPermissionEvents(ListPermissionEventsResult &user_return_data, std::string json_data);
 };
 
 }

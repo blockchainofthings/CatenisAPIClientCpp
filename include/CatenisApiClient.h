@@ -198,6 +198,43 @@ struct ListMessagesResult
 	bool countExceeded;
 };
 
+
+/*
+* Permission Events description structure
+*
+* @member messageId : ID of message.
+* @member action : Action performed: 'log' or 'send'.
+* @member direction : Direction of 'send' message: 'inbound' or 'outbound'.
+* @member from : Catenis ID/Name/ProdUniqueId of the sending device.
+* @member to : Catenis ID/Name/ProdUniqueId of the target device.
+* @member readConfirmationEnabled : Indicates whether the message had been sent with read-confirmation enabled.
+* @member read : Indicates whether the message had already been read.
+* @member date : ISO 8601 formatted date and time when message was logged, sent or received.
+
+struct PermissionEventsDescription
+{
+	std::shared_ptr<DeviceInfo> permissionEvent;
+	std::string event_name;
+
+	PermissionEventsDescription(
+		std::shared_ptr<DeviceInfo> permissionEvent_arg,
+		std::string event_name_arg): permissionEvent(permissionEvent_arg), event_name(event_name_arg) {}
+	~PermissionEventsDescription() {}
+};
+*/
+
+/*
+* List Permission Events API method response structure
+*
+* @member permissionEvents : Catenis Permission Events of the device.
+* @member event_name : the description of the permission event whose name is this property's name.
+*/
+struct ListPermissionEventsResult
+{
+	//std::shared_ptr<DeviceInfo> permissionEventsList;
+	std::string event_name;
+};
+
 // Forward declare internals
 class CtnApiInternals;
 
@@ -311,6 +348,19 @@ public:
      *
      */
     void listMessages(ListMessagesResult &data, std::string action = "any", std::string direction = "any", std::string from_device_ids = "", std::string to_device_ids = "", std::string from_device_prod_ids = "", std::string to_device_prod_ids = "", std::string read_state = "any", std::string start_date = "", std::string endDate = "");
+
+	/*
+	* List Permission Events
+	*
+	* @param[out] data : The data to parse response into
+	*
+	* @return true if no error has occured.
+	*
+	* @see ctn::ListPermissionEventsResult
+	*
+	*/
+	void listPermissionEvents(ListPermissionEventsResult &data);
+
 };
 
 }
