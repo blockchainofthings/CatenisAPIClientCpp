@@ -861,30 +861,44 @@ void ctn::CtnApiInternals::parseListPermissionEvents(ListPermissionEventsResult 
 		if (status == "success") {
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
 			json_spirit::mObject &data = retObj["data"].get_obj();
-			
 
-			//user_return_data.permissionEventsList = nullptr;
-			//user_return_data.event_name = data["event_name"].get_str();
+			if (data.size() != 0) {
+
+				std::shared_ptr<PermissionEventsDictionary> map_objPtr(new PermissionEventsDictionary());
+
+				for (auto const &permissionEvent : data) {
+					(*map_objPtr)[permissionEvent.first] = permissionEvent.second.get_str();
+				}
+
+				user_return_data.permissionEventsList = map_objPtr;
+			}
+			else {
+				user_return_data.permissionEventsList = nullptr;
+			}
 
 #elif defined(COM_SUPPORT_LIB_POCO)
 			Poco::JSON::Object::Ptr data = retObj->getObject("data");		
 
-			//For TESTING
-			std::cout << json_data << std::endl;
-			//Poco::DynamicStruct ds = *data;
-			//Poco::DynamicStruct collection = ds["data"].extract<Poco::DynamicStruct>();
+			if (data->size() != 0) {
 
-			//for (auto it = collection.begin(); it != collection.end(); ++it)
-			//{
-				//std::cout << it->second.toString().c_str() << std::endl;
-			//}
+				std::shared_ptr<PermissionEventsDictionary> map_objPtr(new PermissionEventsDictionary());
 
-			//for (std::size_t idx = 0, limit = data->size(); idx < limit; idx++) {
+				std::vector<std::string> eventNameList;
+				data->getNames(eventNameList);
 
-			//}
+				for (std::vector<std::string>::iterator eventNameIdx = eventNameList.begin(); eventNameIdx != eventNameList.end(); eventNameIdx++) {
+					
+					(*map_objPtr)[*eventNameIdx] = data->getValue<std::string>(*eventNameIdx);
 
-			//user_return_data.permissionEventsList = json_data;
-			//user_return_data.event_name = data->getValue<std::string>("event_name");
+				}
+
+				user_return_data.permissionEventsList = map_objPtr;
+			
+			}
+			else {
+				user_return_data.permissionEventsList = nullptr;
+			}
+			
 #endif
 		}
 		else {

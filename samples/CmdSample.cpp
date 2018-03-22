@@ -289,12 +289,18 @@ int main(int argc, char* argv[])
 				ListPermissionEventsResult data;
 				client.listPermissionEvents(data);
 
-				/*
-				for (; it != data.permissionEventsList.end(); it++)
+				if (data.permissionEventsList != nullptr)
 				{
-
+					std::map<std::string, std::string>::iterator it = data.permissionEventsList->begin();
+					for (; it != data.permissionEventsList->end(); it++)
+					{
+						cout << "  Permission Events (" << it->first << ") reference: " << it->second << std::endl;
+					}
 				}
-				*/
+				else 
+				{
+					cout << "  No Permission Events to List " << std::endl;
+				}
 
 			}
 			catch (CatenisAPIException &errObject)

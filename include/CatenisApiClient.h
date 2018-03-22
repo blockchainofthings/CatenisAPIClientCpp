@@ -199,29 +199,8 @@ struct ListMessagesResult
 };
 
 
-/*
-* Permission Events description structure
-*
-* @member messageId : ID of message.
-* @member action : Action performed: 'log' or 'send'.
-* @member direction : Direction of 'send' message: 'inbound' or 'outbound'.
-* @member from : Catenis ID/Name/ProdUniqueId of the sending device.
-* @member to : Catenis ID/Name/ProdUniqueId of the target device.
-* @member readConfirmationEnabled : Indicates whether the message had been sent with read-confirmation enabled.
-* @member read : Indicates whether the message had already been read.
-* @member date : ISO 8601 formatted date and time when message was logged, sent or received.
-
-struct PermissionEventsDescription
-{
-	std::shared_ptr<DeviceInfo> permissionEvent;
-	std::string event_name;
-
-	PermissionEventsDescription(
-		std::shared_ptr<DeviceInfo> permissionEvent_arg,
-		std::string event_name_arg): permissionEvent(permissionEvent_arg), event_name(event_name_arg) {}
-	~PermissionEventsDescription() {}
-};
-*/
+// Dictionary holding permissions events reference by permission event's name
+typedef std::map<std::string, std::string> PermissionEventsDictionary;
 
 /*
 * List Permission Events API method response structure
@@ -231,8 +210,8 @@ struct PermissionEventsDescription
 */
 struct ListPermissionEventsResult
 {
-	//std::shared_ptr<DeviceInfo> permissionEventsList;
 	std::string event_name;
+	std::shared_ptr<PermissionEventsDictionary> permissionEventsList;
 };
 
 // Forward declare internals
