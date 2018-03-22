@@ -46,8 +46,8 @@ cmake-build-*
 
 # Visual Studio Generated Files
 .vs/
-*.vcxproj
 CMakeSettings.json
+*.vcxproj
 .vs/VSWorkspaceState.json
 .vs/slnx.sqlite
 .vs/CatenisAPIClientCpp/v15/ipch/AutoPCH/7f577fee434f3247/CMDSAMPLE.ipch
