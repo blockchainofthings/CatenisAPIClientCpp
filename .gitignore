@@ -43,3 +43,13 @@ _builds/
 # CLion
 .idea
 cmake-build-*
+
+# Visual Studio Generated Files
+.vs/
+*.vcxproj
+CMakeSettings.json
+.vs/VSWorkspaceState.json
+.vs/slnx.sqlite
+.vs/CatenisAPIClientCpp/v15/ipch/AutoPCH/7f577fee434f3247/CMDSAMPLE.ipch
+.vs/CatenisAPIClientCpp/v15/Browse.VC.db
+.vs/CatenisAPIClientCpp/v15/.suo
