@@ -41,7 +41,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     # Clang
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     # GNU
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -ldl")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
     # intel
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
@@ -92,14 +92,6 @@ elseif ("${COM_SUPPORT_LIB}" STREQUAL "POCO")
     endif()
 endif()
 
-# fix cmake generator bug, kinda hacky since static, will fix later if needed
-if(WIN32)
-  set(tempCatenis_loc "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/tempCatenis.lib")
-else()
-  set(tempCatenis_loc "${CMAKE_CURRENT_BINARY_DIR}/libtempCatenis.a")
-  set(catenic_loc "${CMAKE_CURRENT_BINARY_DIR}/libCatenisAPIClient.a")
-endif()
-
 # Merge all libs into one lib (the first lib added has to be the lib created: tempCatenis)
 if ("${COM_SUPPORT_LIB}" STREQUAL "BOOST_ASIO")
     merge_static_libs(CatenisAPIClient tempCatenis Boost::system OpenSSL::SSL OpenSSL::Crypto)
@@ -115,13 +107,12 @@ endif()
 
 # Delete temp lib tempCatenis after build
 if(WIN32)
-  # have to use del command, and turn slash into backslash
-  string(REGEX REPLACE "/" "\\\\" tempCatenis_loc ${tempCatenis_loc})
-  add_custom_command(TARGET CatenisAPIClient POST_BUILD 
-  COMMAND del ${tempCatenis_loc}
-)
+  string(REGEX REPLACE "/" "\\\\" libOutDir "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/")
+  add_custom_command(TARGET CatenisAPIClient POST_BUILD
+    COMMAND del "${libOutDir}$<TARGET_FILE_NAME:tempCatenis>"
+  )
 else()
   add_custom_command(TARGET CatenisAPIClient POST_BUILD
-  COMMAND rm ${tempCatenis_loc}
-)
+    COMMAND rm $<TARGET_FILE:tempCatenis>
+  )
 endif()
