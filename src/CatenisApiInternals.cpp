@@ -862,50 +862,25 @@ void ctn::CtnApiInternals::parseListPermissionEvents(ListPermissionEventsResult 
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
 			json_spirit::mObject &data = retObj["data"].get_obj();
 
-			if (data.size() != 0) {
-
-				std::shared_ptr<PermissionEventsDictionary> map_objPtr(new PermissionEventsDictionary());
-
-				for (auto const &permissionEvent : data) {
-					(*map_objPtr)[permissionEvent.first] = permissionEvent.second.get_str();
-				}
-
-				user_return_data.permissionEventsList = map_objPtr;
-			}
-			else {
-				user_return_data.permissionEventsList = nullptr;
-			}
-
+            for (auto const &permissionEvent : data) {
+                user_return_data.permissionEvents[permissionEvent.first] = permissionEvent.second.get_str();
+            }
 #elif defined(COM_SUPPORT_LIB_POCO)
 			Poco::JSON::Object::Ptr data = retObj->getObject("data");		
 
-			if (data->size() != 0) {
+            std::vector<std::string> eventNameList;
+            data->getNames(eventNameList);
 
-				std::shared_ptr<PermissionEventsDictionary> map_objPtr(new PermissionEventsDictionary());
-
-				std::vector<std::string> eventNameList;
-				data->getNames(eventNameList);
-
-				for (std::vector<std::string>::iterator eventNameIdx = eventNameList.begin(); eventNameIdx != eventNameList.end(); eventNameIdx++) {
-					
-					(*map_objPtr)[*eventNameIdx] = data->getValue<std::string>(*eventNameIdx);
-
-				}
-
-				user_return_data.permissionEventsList = map_objPtr;
-			
-			}
-			else {
-				user_return_data.permissionEventsList = nullptr;
-			}
-			
+            for (std::vector<std::string>::iterator eventNameIdx = eventNameList.begin(); eventNameIdx != eventNameList.end(); eventNameIdx++) {
+                user_return_data.permissionEvents[*eventNameIdx] = data->getValue<std::string>(*eventNameIdx);
+            }
 #endif
 		}
 		else {
-			throw CatenisClientError("Unexpected - returned data from List Permission Events API method");
+			throw CatenisClientError("Unexpected returned data from List Permission Events API method");
 		}
 	}
 	catch (...) {
-		throw CatenisClientError("Unexpected + returned data from List Permission Events API method");
+		throw CatenisClientError("Unexpected returned data from List Permission Events API method");
 	}
 }

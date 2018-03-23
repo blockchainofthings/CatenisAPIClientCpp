@@ -280,28 +280,17 @@ int main(int argc, char* argv[])
         }
 		else if (method == "listPermissionEvents")
 		{
-
 			cin.ignore();
 
 			try
 			{
-		
 				ListPermissionEventsResult data;
 				client.listPermissionEvents(data);
 
-				if (data.permissionEventsList != nullptr)
-				{
-					std::map<std::string, std::string>::iterator it = data.permissionEventsList->begin();
-					for (; it != data.permissionEventsList->end(); it++)
-					{
-						cout << "  Permission Events (" << it->first << ") reference: " << it->second << std::endl;
-					}
-				}
-				else 
-				{
-					cout << "  No Permission Events to List " << std::endl;
-				}
-
+                for (PermissionEventDictionary::iterator it = data.permissionEvents.begin(); it != data.permissionEvents.end(); it++)
+                {
+                    cout << "  Permission event (" << it->first << "): " << it->second << std::endl;
+                }
 			}
 			catch (CatenisAPIException &errObject)
 			{

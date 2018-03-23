@@ -198,20 +198,17 @@ struct ListMessagesResult
 	bool countExceeded;
 };
 
-
-// Dictionary holding permissions events reference by permission event's name
-typedef std::map<std::string, std::string> PermissionEventsDictionary;
+// Dictionary holding permission event description by permission event name
+typedef std::map<std::string, std::string> PermissionEventDictionary;
 
 /*
 * List Permission Events API method response structure
 *
-* @member permissionEvents : Catenis Permission Events of the device.
-* @member event_name : the description of the permission event whose name is this property's name.
+* @member permissionEvents : The permission events
 */
 struct ListPermissionEventsResult
 {
-	std::string event_name;
-	std::shared_ptr<PermissionEventsDictionary> permissionEventsList;
+    PermissionEventDictionary permissionEvents;
 };
 
 // Forward declare internals
