@@ -884,3 +884,295 @@ void ctn::CtnApiInternals::parseListPermissionEvents(ListPermissionEventsResult 
 		throw CatenisClientError("Unexpected returned data from List Permission Events API method");
 	}
 }
+
+// Private Method.
+void ctn::CtnApiInternals::parseRetrievePermissionRights(RetrievePermissionRightsResult &user_return_data, std::string json_data)
+{
+	try {
+#if defined(COM_SUPPORT_LIB_BOOST_ASIO)
+		json_spirit::mValue result;
+		json_spirit::read_string_or_throw(json_data, result);
+
+		json_spirit::mObject &retObj = result.get_obj();
+
+		std::string const &status = retObj["status"].get_str();
+#elif defined(COM_SUPPORT_LIB_POCO)
+		Poco::JSON::Parser parser;
+		Poco::Dynamic::Var result = parser.parse(json_data);
+
+		Poco::JSON::Object::Ptr retObj = result.extract<Poco::JSON::Object::Ptr>();
+
+		std::string status = retObj->getValue<std::string>("status");
+#endif
+
+		if (status == "success") {
+#if defined(COM_SUPPORT_LIB_BOOST_ASIO)
+			json_spirit::mObject &data = retObj["data"].get_obj();
+
+			/* ############### SYSTEM LEVEL PERMISSION RIGHTS ###############*/
+
+			user_return_data.system = data["system"].get_str();
+			
+			/* ############### CATENIS NODE PERMISSION RIGHTS ###############*/
+
+			if (data.find("catenisNode") != data.end()) {
+				
+				json_spirit::mObject &catenisObj= data["catenisNode"].get_obj();
+
+				std::list<std::string> allowed;
+				std::list<std::string> denied;
+
+				if (catenisObj.find("allow") != catenisObj.end()) {
+
+					json_spirit::mArray &catenisRights = catenisObj["allow"].get_array();
+
+					for (json_spirit::mValue &entry : catenisRights) {
+						
+						std::string catenisId = entry.get_str();
+
+						allowed.push_back(catenisId);
+					}
+				}
+
+				if (catenisObj.find("deny") != catenisObj.end()) {
+
+					json_spirit::mArray &catenisRights = catenisObj["deny"].get_array();
+
+					for (json_spirit::mValue &entry : catenisRights) {
+
+						std::string catenisId = entry.get_str();
+
+						denied.push_back(catenisId);
+
+					}
+				}
+
+				std::shared_ptr<PermissionRightsCatenis> node_obj(new PermissionRightsCatenis(allowed, denied));
+				user_return_data.catenisNode = node_obj;
+
+			}
+
+			else {
+				user_return_data.catenisNode = nullptr;
+			}
+
+			/* ############### CLIENT LEVEL PERMISSION RIGHTS ###############*/
+
+			if (data.find("client") != data.end()) {
+
+				json_spirit::mObject &clientObj = data["client"].get_obj();
+
+				std::list<std::string> allowed;
+				std::list<std::string> denied;
+
+				if (clientObj.find("allow") != clientObj.end()) {
+
+					json_spirit::mArray &clientRights = clientObj["allow"].get_array();
+					
+					for (json_spirit::mValue &entry : clientRights) {
+
+						std::string clientId = entry.get_str();
+						
+						allowed.push_back(clientId);
+
+					}
+					
+				}
+				
+				if (clientObj.find("deny") != clientObj.end()) {
+
+					json_spirit::mArray &clientRights = clientObj["deny"].get_array();
+
+					for (json_spirit::mValue &entry : clientRights) {
+
+						std::string clientId = entry.get_str();
+
+						denied.push_back(clientId);
+
+					}
+
+				}
+				
+				std::shared_ptr<PermissionRightsClient> node_obj(new PermissionRightsClient(allowed, denied));
+				user_return_data.client = node_obj;
+
+			}
+
+			else {
+				user_return_data.client = nullptr;
+			}
+
+
+			/* ############### DEVICE LEVEL PERMISSION RIGHTS ###############*/
+			
+			if (data.find("device") != data.end()) {
+
+				json_spirit::mObject &deviceObj = data["device"].get_obj();
+
+				std::list< std::shared_ptr<DeviceInfo> > allowed;
+				std::list< std::shared_ptr<DeviceInfo> > denied;
+
+				if (deviceObj.find("allow") != data.end()) {
+
+					json_spirit::mArray &virtualDevices = deviceObj["allow"].get_array();
+
+					for (json_spirit::mValue &entry : virtualDevices) {
+						json_spirit::mObject &thisDevice = entry.get_obj();
+
+						std::string const &deviceId      = thisDevice["deviceId"].get_str();
+
+						std::string name;
+						if (thisDevice.find("name") != thisDevice.end()) {
+							name = thisDevice["name"].get_str();
+						}
+
+						std::string prodUniqueId;
+						if (thisDevice.find("prodUniqueId") != thisDevice.end()) {
+							prodUniqueId = thisDevice["prodUniqueId"].get_str();
+						}
+
+						std::shared_ptr<DeviceInfo> deviceRightsObj(new DeviceInfo(deviceId, name, prodUniqueId));
+						allowed.push_back(deviceRightsObj);
+					}
+
+				}
+
+				std::shared_ptr<PermissionRightsDevice> deviceInfoObj(new PermissionRightsDevice(allowed, allowed));
+				user_return_data.device = deviceInfoObj;
+			}
+			
+			
+#elif defined(COM_SUPPORT_LIB_POCO)
+		Poco::JSON::Object::Ptr data = retObj->getObject("data");
+
+		/* ############### SYSTEM LEVEL PERMISSION RIGHTS ################*/
+
+		user_return_data.system = data->getValue<std::string>("system");
+
+		/* ############### CATENIS NODE PERMISSION RIGHTS ////###############*/
+		if (data->has("catenisNode")) {
+			Poco::JSON::Object::Ptr catenisObj = data->getObject("catenisNode");
+
+			std::list<std::string> allowed;
+			if (catenisObj->has("allow")) {
+				Poco::JSON::Array::Ptr catenisRights = catenisObj->getArray("allow");
+				for (std::size_t idx = 0, limit = catenisRights->size(); idx < limit; idx++) {
+					std::string catenisId = catenisRights->get(idx);
+					allowed.push_back(catenisId);
+				}
+			}
+
+			std::list<std::string> denied;
+			if (catenisObj->has("deny")) {
+				Poco::JSON::Array::Ptr catenisRights = catenisObj->getArray("deny");
+				for (std::size_t idx = 0, limit = catenisRights->size(); idx < limit; idx++) {
+					std::string catenisId = catenisRights->get(idx);
+					denied.push_back(catenisId);
+				}
+			}
+
+			std::shared_ptr<PermissionRightsCatenis> node_obj(new PermissionRightsCatenis(allowed, denied));
+			user_return_data.catenisNode = node_obj;
+		}
+		else {
+			user_return_data.catenisNode= nullptr;
+		}
+
+		/* ############### CLIENT LEVEL PERMISSION RIGHTS ////###############*/
+		if (data->has("client")) {
+			Poco::JSON::Object::Ptr clientObj = data->getObject("client");
+
+			std::list<std::string> allowed;
+			if (clientObj->has("allow")) {
+				Poco::JSON::Array::Ptr clientRights = clientObj->getArray("allow");
+				for (std::size_t idx = 0, limit = clientRights->size(); idx < limit; idx++) {
+					std::string clientId = clientRights->get(idx);
+					allowed.push_back(clientId);
+				}
+			}
+
+			std::list<std::string> denied;
+			if (clientObj->has("deny")) {
+				Poco::JSON::Array::Ptr clientRights = clientObj->getArray("deny");
+				for (std::size_t idx = 0, limit = clientRights->size(); idx < limit; idx++) {
+					std::string clientId = clientRights->get(idx);
+					denied.push_back(clientId);
+				}
+			}
+
+			std::shared_ptr<PermissionRightsClient> node_obj(new PermissionRightsClient(allowed,denied));
+			user_return_data.client = node_obj;
+		}
+		else {
+			user_return_data.client = nullptr;
+		}
+
+		/* ############### DEVICE LEVEL PERMISSION RIGHTS ////###############*/
+		if (data->has("device")) 
+		{
+			Poco::JSON::Object::Ptr deviceObj = data->getObject("device");
+
+			std::list< std::shared_ptr<DeviceInfo> > allowed;
+			std::list< std::shared_ptr<DeviceInfo> > denied;
+			
+			if (deviceObj->has("allow")) 
+			{
+				Poco::JSON::Array::Ptr virtualDevices = deviceObj->getArray("allow");
+				for (std::size_t idx = 0, limit = virtualDevices->size(); idx < limit; idx++) {
+					Poco::JSON::Object::Ptr thisDevice = virtualDevices->getObject(idx);
+					std::string deviceId = thisDevice->getValue<std::string>("deviceId");
+
+					std::string name;
+					if (thisDevice->has("name")) {
+						name = thisDevice->getValue<std::string>("name");
+					}
+
+					std::string prodUniqueId;
+					if (thisDevice->has("prodUniqueId")) {
+						prodUniqueId = thisDevice->getValue<std::string>("prodUniqueId");
+					}
+
+					std::shared_ptr<DeviceInfo> deviceRightsObj(new DeviceInfo(deviceId, name, prodUniqueId));
+					allowed.push_back(deviceRightsObj);
+				}
+
+			}
+			
+			if (deviceObj->has("deny")) 
+			{
+				Poco::JSON::Array::Ptr virtualDevices = deviceObj->getArray("deny");
+				for (std::size_t idx = 0, limit = virtualDevices->size(); idx < limit; idx++) {
+					Poco::JSON::Object::Ptr thisDevice = virtualDevices->getObject(idx);
+					std::string deviceId = thisDevice->getValue<std::string>("deviceId");
+
+					std::string name;
+					if (thisDevice->has("name")) {
+						name = thisDevice->getValue<std::string>("name");
+					}
+
+					std::string prodUniqueId;
+					if (thisDevice->has("prodUniqueId")) {
+						prodUniqueId = thisDevice->getValue<std::string>("prodUniqueId");
+					}
+
+					std::shared_ptr<DeviceInfo> deviceInfoObj(new DeviceInfo(deviceId, name, prodUniqueId));
+					denied.push_back(deviceInfoObj);
+				}
+			}
+			
+			
+			std::shared_ptr<PermissionRightsDevice> permissionRightsDeviceObj(new PermissionRightsDevice(allowed, denied));
+			user_return_data.device = permissionRightsDeviceObj;
+
+		}
+
+#endif
+		}
+		else {
+			throw CatenisClientError("Unexpected returned data from Retrieve Permission Rights API method");
+		}
+	}
+	catch (...) {
+		throw CatenisClientError("Unexpected returned data from Retrieve Permission Rights API method");
+	}
+}

@@ -211,6 +211,84 @@ struct ListPermissionEventsResult
     PermissionEventDictionary permissionEvents;
 };
 
+
+/*
+* Permission Rights at Device Level structure (Array of Objects)
+*
+* @member allowed : Object structure of allowed virtual devices
+* @member denied  : Object structure of denied virtual devices
+*
+*/
+struct PermissionRightsDevice
+{
+
+	std::list< std::shared_ptr<DeviceInfo> > allowed;
+	std::list< std::shared_ptr<DeviceInfo> > denied;
+
+	PermissionRightsDevice(
+		std::list< std::shared_ptr<DeviceInfo> > allowedDevices,
+		std::list< std::shared_ptr<DeviceInfo> > deniedDevices)
+		: allowed(allowedDevices), denied(deniedDevices) {}
+	~PermissionRightsDevice() {}
+
+};
+
+/*
+* Permission Rights Catenis Level structure
+*
+* @member allowed : List of allowed rights
+* @member denied : List of denied rights
+*
+*/
+struct PermissionRightsCatenis
+{
+
+	std::list<std::string> allowed;
+	std::list<std::string> denied;
+
+	PermissionRightsCatenis(std::list<std::string> allowedRights,
+							   std::list<std::string> deniedRights)
+		: allowed(allowedRights), denied(deniedRights) {}
+	~PermissionRightsCatenis() {}
+
+};
+
+/*
+* Permission Rights Client Level structure
+*
+* @member allowed : List of allowed rights
+* @member denied : List of denied rights
+*
+*/
+struct PermissionRightsClient
+{
+
+	std::list<std::string> allowed;
+	std::list<std::string> denied;
+
+	PermissionRightsClient(std::list<std::string> allowedRights,
+		std::list<std::string> deniedRights)
+		: allowed(allowedRights), denied(deniedRights) {}
+	~PermissionRightsClient() {}
+
+};
+
+/*
+* Retrieve Permission Rights API method response structure
+*
+* @member
+*/
+struct RetrievePermissionRightsResult
+{
+
+	std::string system;
+	std::shared_ptr<PermissionRightsCatenis> catenisNode;
+	std::shared_ptr<PermissionRightsClient> client;
+	std::shared_ptr<PermissionRightsDevice> device;
+
+};
+
+
 // Forward declare internals
 class CtnApiInternals;
 
@@ -336,6 +414,21 @@ public:
 	*
 	*/
 	void listPermissionEvents(ListPermissionEventsResult &data);
+
+
+	/*
+	* Retrieve Permission Rights
+	*
+	* @param[out] data : The data to parse response into
+	*
+	* @param[in] event name : name of the permission event to lookup
+	*
+	* @return true if no error has occured.
+	*
+	* @see ctn::ListPermissionEventsResult
+	*
+	*/
+	void retrievePermissionRights(RetrievePermissionRightsResult &data, std::string eventName);
 
 };
 

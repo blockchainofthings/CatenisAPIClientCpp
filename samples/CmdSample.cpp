@@ -40,6 +40,7 @@ int main(int argc, char* argv[])
     cout << "    retrieve <message_id>" << endl;
     cout << "    list" << endl;
 	cout << "    listPermissionEvents" << endl;
+	cout << "    retrievePermissionRights <event_name>" << endl;
     cout << "    exit" << endl;
 
     bool exit = false;
@@ -291,6 +292,113 @@ int main(int argc, char* argv[])
                 {
                     cout << "  Permission event (" << it->first << "): " << it->second << std::endl;
                 }
+			}
+			catch (CatenisAPIException &errObject)
+			{
+				std::cerr << errObject.getErrorDescription() << std::endl;
+			}
+			catch (...)
+			{
+				std::cerr << "Unknown error encountered: call to client.sendMessage." << std::endl;
+			}
+		}
+		else if (method == "retrievePermissionRights")
+		{
+
+			string eventName;
+
+			cin >> eventName;
+			cin.ignore();
+
+			try
+			{
+				RetrievePermissionRightsResult data;
+				client.retrievePermissionRights(data, eventName);
+
+				/* SYSTEM LEVEL PERMISSION RIGHTS */
+				std::cout << "\nSYSTEM:\t\t\t" << data.system << std::endl;
+
+				/* CATENIS NODE PERMISSION RIGHTS */
+				if (data.catenisNode != nullptr)
+				{
+
+					std::list<std::string> allowed = data.client->allowed;
+
+					if (allowed.size() > 0) {
+						std::cout << "" << std::endl;
+						std::cout << "CATENIS NODES Allowed: " << std::endl;
+						for (std::list<std::string>::const_iterator i = allowed.begin(); i != allowed.end(); ++i)
+						{
+							std::cout << "\t\t\t\t" + *i << std::endl;
+						}
+					}
+
+					std::list<std::string> denied = data.client->denied;
+					if (denied.size() > 0) {
+						std::cout << "" << std::endl;
+						std::cout << "CATENIS NODES Denied: " << std::endl;
+						for (std::list<std::string>::const_iterator i = denied.begin(); i != denied.end(); ++i)
+						{
+							std::cout << "\t\t\t\t" + *i << std::endl;
+						}
+					}
+				}
+
+				/* CLIENT NODE PERMISSION RIGHTS */
+				if (data.client != nullptr)
+				{
+
+					std::list<std::string> allowed = data.client->allowed;
+
+					if (allowed.size() > 0) {
+						std::cout << "" << std::endl;
+						std::cout << "CLIENTS Allowed: " << std::endl;
+						std::cout << "----------------------------------------------" << std::endl;
+						for (std::list<std::string>::const_iterator i = allowed.begin(); i != allowed.end(); ++i)
+						{
+							//printf("%s ",i->c_str());
+							std::cout << "\t\t" + *i << std::endl;
+						}
+					}
+
+					std::list<std::string> denied = data.client->denied;
+					if (denied.size() > 0) {
+						std::cout << "" << std::endl;
+						std::cout << "CLIENTS Denied: " << std::endl;
+						std::cout << "----------------------------------------------" << std::endl;
+						for (std::list<std::string>::const_iterator i = denied.begin(); i != denied.end(); ++i)
+						{
+							std::cout << "\t\t\t" + *i << std::endl;
+						}
+					}
+
+					/* DEVICE LEVEL PERMISSION RIGHTS */
+					if (data.device != nullptr)
+					{
+
+						std::cout << "" << std::endl;
+						std::cout << "DEVICES Allowed: " << std::endl;
+						std::cout << "----------------------------------------------" << std::endl;
+						std::list<std::shared_ptr<DeviceInfo>> allowed = data.device->allowed;
+
+						if (allowed.size() > 0) {
+							std::list<std::shared_ptr<DeviceInfo>>::iterator it = allowed.begin();
+							for (; it != allowed.end(); it++)
+							{
+								DeviceInfo okDev = *(*it);
+								std::cout << "FromDeviceId\t\t: " << okDev.deviceId << endl;
+								if (!okDev.name.empty())
+									std::cout << "FromName\t\t: " << okDev.name << endl;
+								if (!okDev.prodUniqueId.empty())
+									std::cout << "FromProdUniqueId\t: " << okDev.prodUniqueId << endl;
+								std::cout << "" << std::endl;
+							}
+						}
+
+					}
+
+				}
+
 			}
 			catch (CatenisAPIException &errObject)
 			{

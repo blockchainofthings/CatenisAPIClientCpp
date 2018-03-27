@@ -196,6 +196,24 @@ void ctn::CtnApiClient::listPermissionEvents(ListPermissionEventsResult &data)
 	this->internals_->parseListPermissionEvents(data, http_return_data);
 }
 
+// API Method: Retrieve Permission Rights
+void ctn::CtnApiClient::retrievePermissionRights(RetrievePermissionRightsResult &data, std::string eventName)
+{
+	std::map<std::string, std::string> params;
+	std::map<std::string, std::string> queries;
+
+	params[":eventName"] = eventName;
+
+#if defined(COM_SUPPORT_LIB_BOOST_ASIO)
+	json_spirit::mValue request_data;
+#elif defined(COM_SUPPORT_LIB_POCO)
+	Poco::JSON::Object request_data;
+#endif
+	std::string http_return_data;
+	this->internals_->httpRequest("GET", "permission/events/:eventName/rights", params, queries, request_data, http_return_data);
+	this->internals_->parseRetrievePermissionRights(data, http_return_data);
+}
+
 // CtnApiClient Constructor
 ctn::CtnApiClient::CtnApiClient(std::string device_id, std::string api_access_secret, std::string host, std::string port, std::string environment, bool secure, std::string version)
 {
