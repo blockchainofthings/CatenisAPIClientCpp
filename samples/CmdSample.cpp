@@ -304,9 +304,7 @@ int main(int argc, char* argv[])
 		}
 		else if (method == "retrievePermissionRights")
 		{
-
 			string eventName;
-
 			cin >> eventName;
 			cin.ignore();
 
@@ -321,7 +319,6 @@ int main(int argc, char* argv[])
 				/* CATENIS NODE PERMISSION RIGHTS */
 				if (data.catenisNode != nullptr)
 				{
-
 					std::list<std::string> allowed = data.client->allowed;
 
 					if (allowed.size() > 0) {
@@ -347,7 +344,6 @@ int main(int argc, char* argv[])
 				/* CLIENT NODE PERMISSION RIGHTS */
 				if (data.client != nullptr)
 				{
-
 					std::list<std::string> allowed = data.client->allowed;
 
 					if (allowed.size() > 0) {
@@ -356,7 +352,6 @@ int main(int argc, char* argv[])
 						std::cout << "----------------------------------------------" << std::endl;
 						for (std::list<std::string>::const_iterator i = allowed.begin(); i != allowed.end(); ++i)
 						{
-							//printf("%s ",i->c_str());
 							std::cout << "\t\t" + *i << std::endl;
 						}
 					}
@@ -375,7 +370,6 @@ int main(int argc, char* argv[])
 					/* DEVICE LEVEL PERMISSION RIGHTS */
 					if (data.device != nullptr)
 					{
-
 						std::cout << "" << std::endl;
 						std::cout << "DEVICES Allowed: " << std::endl;
 						std::cout << "----------------------------------------------" << std::endl;

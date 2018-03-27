@@ -221,7 +221,6 @@ struct ListPermissionEventsResult
 */
 struct PermissionRightsDevice
 {
-
 	std::list< std::shared_ptr<DeviceInfo> > allowed;
 	std::list< std::shared_ptr<DeviceInfo> > denied;
 
@@ -230,7 +229,6 @@ struct PermissionRightsDevice
 		std::list< std::shared_ptr<DeviceInfo> > deniedDevices)
 		: allowed(allowedDevices), denied(deniedDevices) {}
 	~PermissionRightsDevice() {}
-
 };
 
 /*
@@ -240,17 +238,16 @@ struct PermissionRightsDevice
 * @member denied : List of denied rights
 *
 */
-struct PermissionRightsCatenis
+struct PermissionRightsCatenisNode
 {
-
 	std::list<std::string> allowed;
 	std::list<std::string> denied;
 
-	PermissionRightsCatenis(std::list<std::string> allowedRights,
-							   std::list<std::string> deniedRights)
+	PermissionRightsCatenisNode(
+		std::list<std::string> allowedRights,
+		std::list<std::string> deniedRights)
 		: allowed(allowedRights), denied(deniedRights) {}
-	~PermissionRightsCatenis() {}
-
+	~PermissionRightsCatenisNode() {}
 };
 
 /*
@@ -262,32 +259,31 @@ struct PermissionRightsCatenis
 */
 struct PermissionRightsClient
 {
-
 	std::list<std::string> allowed;
 	std::list<std::string> denied;
 
-	PermissionRightsClient(std::list<std::string> allowedRights,
+	PermissionRightsClient(
+		std::list<std::string> allowedRights,
 		std::list<std::string> deniedRights)
 		: allowed(allowedRights), denied(deniedRights) {}
 	~PermissionRightsClient() {}
-
 };
 
 /*
 * Retrieve Permission Rights API method response structure
 *
-* @member
+* @member system : Permission right set at the system level.
+* @member catenisNode : Lists of allowed and denied catenisNodes
+* @member catenisNode : Lists of allowed and denied clients
+* @member catenisNode : Device Information of allowed and denied devices
 */
 struct RetrievePermissionRightsResult
 {
-
 	std::string system;
-	std::shared_ptr<PermissionRightsCatenis> catenisNode;
+	std::shared_ptr<PermissionRightsCatenisNode> catenisNode;
 	std::shared_ptr<PermissionRightsClient> client;
 	std::shared_ptr<PermissionRightsDevice> device;
-
 };
-
 
 // Forward declare internals
 class CtnApiInternals;
