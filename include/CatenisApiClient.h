@@ -285,6 +285,19 @@ struct RetrievePermissionRightsResult
 	std::shared_ptr<PermissionRightsDevice> device;
 };
 
+// Dictionary holding notification event description by notification event name
+typedef std::map<std::string, std::string> NotificationEventDictionary;
+
+/*
+* List Notification Events API method response structure
+*
+* @member notificationEvents : The notification events
+*/
+struct ListNotificationEventsResult
+{
+	NotificationEventDictionary notificationEvents;
+};
+
 // Forward declare internals
 class CtnApiInternals;
 
@@ -425,6 +438,19 @@ public:
 	*
 	*/
 	void retrievePermissionRights(RetrievePermissionRightsResult &data, std::string eventName);
+
+
+	/*
+	* List Notification Events
+	*
+	* @param[out] data : The data to parse response into
+	*
+	* @return true if no error has occured.
+	*
+	* @see ctn::ListNotificationEventsResult
+	*
+	*/
+	void listNotificationEvents(ListNotificationEventsResult &data);
 
 };
 

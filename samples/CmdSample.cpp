@@ -41,6 +41,7 @@ int main(int argc, char* argv[])
     cout << "    list" << endl;
 	cout << "    listPermissionEvents" << endl;
 	cout << "    retrievePermissionRights <event_name>" << endl;
+	cout << "    listNotificationEvents" << endl;
     cout << "    exit" << endl;
 
     bool exit = false;
@@ -393,6 +394,29 @@ int main(int argc, char* argv[])
 
 				}
 
+			}
+			catch (CatenisAPIException &errObject)
+			{
+				std::cerr << errObject.getErrorDescription() << std::endl;
+			}
+			catch (...)
+			{
+				std::cerr << "Unknown error encountered: call to client.sendMessage." << std::endl;
+			}
+		}
+		else if (method == "listNotificationEvents")
+		{
+			cin.ignore();
+
+			try
+			{
+				ListNotificationEventsResult data;
+				client.listNotificationEvents(data);
+
+				for (NotificationEventDictionary::iterator it = data.notificationEvents.begin(); it != data.notificationEvents.end(); it++)
+				{
+					cout << "  Notification event (" << it->first << "): " << it->second << std::endl;
+				}
 			}
 			catch (CatenisAPIException &errObject)
 			{
