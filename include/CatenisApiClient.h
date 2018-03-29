@@ -312,13 +312,51 @@ struct CheckEffectivePermissionRightResult
 };
 
 /*
-* List Notification Events API method response structure
+* Catenis Node info structure
 *
-* @member notificationEvents : The notification events
+* @member nodeIndex :  index of the Catenis node.
+* @member nodename  :  name of the Catenis node.
+* @member nodeInfo  :  short description about the Catenis node.
+*/
+struct CatenisNodeInfo
+{
+	int index;
+	std::string name;
+	std::string description;
+
+	CatenisNodeInfo(int node_index, std::string node_name, std::string node_info)
+		: index(node_index), name(node_name), description(node_info) {}
+	~CatenisNodeInfo() {}
+};
+
+/*
+* Device's Client info structure
+*
+* @member clientId    :  client id
+* @member clientName  :  client name
+*/
+struct ClientInfo
+{
+	std::string clientId;
+	std::string name;
+
+	ClientInfo(std::string client_id, std::string client_name)
+		: clientId(client_id), name(client_name) {}
+	~ClientInfo() {}
+};
+
+/*
+* Retrieve Device Identification Info API method response structure
+*
+* @member catenisNode : Information about the Catenis node where the client to which the specified virtual device belongs is defined.
+* @member catenisNode : Information about the client to which the specified virtual device belongs.
+* @member catenisNode : Information about the specified virtual device itself.
 */
 struct DeviceIdInfoResult
 {
-	std::string effectivePermissionRight;
+	std::shared_ptr<CatenisNodeInfo> catenisNode;
+	std::shared_ptr<ClientInfo> client;
+	std::shared_ptr<DeviceInfo> device;
 };
 
 

@@ -383,11 +383,11 @@ int main(int argc, char* argv[])
 							for (; it != allowed.end(); it++)
 							{
 								DeviceInfo okDev = *(*it);
-								std::cout << "FromDeviceId\t\t: " << okDev.deviceId << endl;
+								std::cout << "DeviceId\t\t: " << okDev.deviceId << endl;
 								if (!okDev.name.empty())
-									std::cout << "FromName\t\t: " << okDev.name << endl;
+									std::cout << "DeviceName\t\t: " << okDev.name << endl;
 								if (!okDev.prodUniqueId.empty())
-									std::cout << "FromProdUniqueId\t: " << okDev.prodUniqueId << endl;
+									std::cout << "ProdUniqueId\t: " << okDev.prodUniqueId << endl;
 								std::cout << "" << std::endl;
 							}
 						}
@@ -489,11 +489,47 @@ int main(int argc, char* argv[])
 			{
 				DeviceIdInfoResult data;
 				client.retrieveDeviceIdInfo(data, deviceId, isProdUniqueId);
-				/*
 
+				std::cout << "-----------CatenisNode Information -------------------" << std::endl;
 
+				// Print out CatenisNodeInfo
+				if (data.catenisNode != nullptr)
+				{
+					std::cout << "" << std::endl;
+					std::cout << "-----------CatenisNode Information -------------------" << std::endl;
+					std::cout << "CatenisNodeId\t\t\t: " << std::to_string(data.catenisNode->index) << endl;
 
-				*/
+					if (!data.catenisNode->name.empty())
+						std::cout << "CatenisNodeName\t\t\t: " << data.catenisNode->name << endl;
+
+					if (!data.catenisNode->description.empty())
+						std::cout << "NodeDescription\t\t\t: " << data.catenisNode->description << endl;
+				}
+
+				// Print out ClientInfo
+				if (data.client != nullptr)
+				{
+					std::cout << "" << std::endl;
+					std::cout << "-----------Client Information -------------------" << std::endl;
+					std::cout << "ClientId\t\t\t: " << data.client->clientId << endl;
+
+					if (!data.device->name.empty())
+						std::cout << "ClientName\t\t\t: " << data.client->name << endl;
+				}
+
+				// Print out DeviceInfo
+				if (data.device != nullptr)
+				{
+					std::cout << "" << std::endl;
+					std::cout << "-----------Device Information -------------------" << std::endl;
+					std::cout << "DeviceId\t\t\t: " << data.device->deviceId << endl;
+
+					if (!data.device->name.empty())
+						std::cout << "DeviceName\t\t\t: " << data.device->name << endl;
+
+					if (!data.device->prodUniqueId.empty())
+						std::cout << "ProdUniqueId\t\t: " << data.device->prodUniqueId << endl;
+				}
 			}
 			catch (CatenisAPIException &errObject)
 			{

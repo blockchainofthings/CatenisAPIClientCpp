@@ -1011,7 +1011,32 @@ void ctn::CtnApiInternals::parseRetrievePermissionRights(RetrievePermissionRight
 						allowed.push_back(deviceRightsObj);
 					}
 				}
-				std::shared_ptr<PermissionRightsDevice> deviceInfoObj(new PermissionRightsDevice(allowed, allowed));
+
+				if (deviceObj.find("deny") != data.end()) {
+					json_spirit::mArray &virtualDevices = deviceObj["deny"].get_array();
+
+					for (json_spirit::mValue &entry : virtualDevices) {
+						json_spirit::mObject &thisDevice = entry.get_obj();
+
+						std::string const &deviceId = thisDevice["deviceId"].get_str();
+
+						std::string name;
+						if (thisDevice.find("name") != thisDevice.end()) {
+							name = thisDevice["name"].get_str();
+						}
+
+						std::string prodUniqueId;
+						if (thisDevice.find("prodUniqueId") != thisDevice.end()) {
+							prodUniqueId = thisDevice["prodUniqueId"].get_str();
+						}
+
+						std::shared_ptr<DeviceInfo> deviceRightsObj(new DeviceInfo(deviceId, name, prodUniqueId));
+						denied.push_back(deviceRightsObj);
+					}
+				}
+
+
+				std::shared_ptr<PermissionRightsDevice> deviceInfoObj(new PermissionRightsDevice(allowed, denied));
 				user_return_data.device = deviceInfoObj;
 			}
 			
@@ -1265,28 +1290,145 @@ void ctn::CtnApiInternals::parseRetrieveDeviceIdInfo(DeviceIdInfoResult &user_re
 		if (status == "success") {
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
 			json_spirit::mObject &data = retObj["data"].get_obj();
-			/*
-			for (auto const &entry : data) {
-				user_return_data.effectivePermissionRight[entry.first] = entry.second.get_str();
+
+			// CATENIS NODE INFO
+			if (data.find("catenisNode") != data.end()) {
+				json_spirit::mObject &ctnNode = data["catenisNode"].get_obj();
+
+				int ctnNodeIdx = ctnNode["ctnNodeIndex"].get_int();
+				//int ctnNodeIdx = 112;
+
+				std::string ctnNodeName;
+				if (ctnNode.find("name") != ctnNode.end()) {
+					ctnNodeName = ctnNode["name"].get_str();
+				}
+
+				std::string ctnNodeInfo;
+				if (ctnNode.find("description") != ctnNode.end()) {
+					ctnNodeInfo = ctnNode["description"].get_str();
+				}
+
+				std::shared_ptr<CatenisNodeInfo> ctnNodeObj(new CatenisNodeInfo(ctnNodeIdx, ctnNodeName, ctnNodeInfo));
+				user_return_data.catenisNode = ctnNodeObj;
 			}
-			*/
+			else {
+				user_return_data.catenisNode = nullptr;
+			}
+
+			// CLIENT INFO
+			if (data.find("client") != data.end()) {
+				json_spirit::mObject &client = data["client"].get_obj();
+
+				std::string const &clientId = client["clientId"].get_str();
+
+				std::string clientName;
+				if (client.find("name") != client.end()) {
+					clientName = client["name"].get_str();
+				}
+
+				std::shared_ptr<ClientInfo> clientObj(new ClientInfo(clientId, clientName));
+				user_return_data.client = clientObj;
+			}
+			else {
+				user_return_data.client = nullptr;
+			}
+
+			// DEVICE INFO
+			if (data.find("device") != data.end()) {
+				json_spirit::mObject &thisDevice = data["device"].get_obj();
+
+				std::string const &deviceId = thisDevice["deviceId"].get_str();
+
+				std::string deviceName;
+				if (thisDevice.find("name") != thisDevice.end()) {
+					deviceName = thisDevice["name"].get_str();
+				}
+
+				std::string prodUniqueId;
+				if (thisDevice.find("prodUniqueId") != thisDevice.end()) {
+					prodUniqueId = thisDevice["prodUniqueId"].get_str();
+				}
+				std::shared_ptr<DeviceInfo> deviceObj(new DeviceInfo(deviceId, deviceName, prodUniqueId));
+				user_return_data.device = deviceObj;
+			}
+			else {
+				user_return_data.device = nullptr;
+			}
+
 #elif defined(COM_SUPPORT_LIB_POCO)
 			Poco::JSON::Object::Ptr data = retObj->getObject("data");
-			std::cout << json_data << std::endl;
-			std::vector<std::string> entries;
-			data->getNames(entries);
-			/*
-			for (std::vector<std::string>::iterator entryIdx = entries.begin(); entryIdx != entries.end(); entryIdx++) {
-				user_return_data.effectivePermissionRight[*entryIdx] = data->getValue<std::string>(*entryIdx);
+
+			// CATENIS NODE INFO
+			if (data->has("catenisNode")) {
+				Poco::JSON::Object::Ptr ctnNode = data->getObject("catenisNode");
+
+				int ctnNodeIdx = ctnNode->getValue<int>("ctnNodeIndex");
+
+				std::string ctnNodeName;
+				if (ctnNode->has("name")) {
+					ctnNodeName = ctnNode->getValue<std::string>("name");
+				}
+
+				std::string ctnNodeInfo;
+				if (ctnNode->has("description")) {
+					ctnNodeInfo = ctnNode->getValue<std::string>("description");
+				}
+
+				std::shared_ptr<CatenisNodeInfo> ctnNodeObj(new CatenisNodeInfo(ctnNodeIdx, ctnNodeName, ctnNodeInfo));
+				user_return_data.catenisNode = ctnNodeObj;
 			}
-			*/
+			else {
+				user_return_data.catenisNode = nullptr;
+			}
+
+			// CLIENT INFO
+			if (data->has("client")) {
+				Poco::JSON::Object::Ptr client = data->getObject("client");
+
+				std::string clientId = client->getValue<std::string>("clientId");
+
+				std::string clientName;
+				if (client->has("name")) {
+					clientName = client->getValue<std::string>("name");
+				}
+
+				std::shared_ptr<ClientInfo> clientObj(new ClientInfo(clientId, clientName));
+				user_return_data.client = clientObj;
+			}
+			else {
+				user_return_data.client = nullptr;
+			}
+
+			// DEVICE INFO
+			if (data->has("device")) {
+				Poco::JSON::Object::Ptr device = data->getObject("device");
+
+				std::string deviceId = device->getValue<std::string>("deviceId");
+
+				std::string deviceName;
+				if (device->has("name")) {
+					deviceName = device->getValue<std::string>("name");
+				}
+
+				std::string prodUniqueId;
+				if (device->has("prodUniqueId")) {
+					prodUniqueId = device->getValue<std::string>("prodUniqueId");
+				}
+
+				std::shared_ptr<DeviceInfo> deviceObj(new DeviceInfo(deviceId, deviceName, prodUniqueId));
+				user_return_data.device = deviceObj;
+			} 
+			else {
+				user_return_data.device = nullptr;
+			}
+
 #endif
 		}
 		else {
-			throw CatenisClientError("Unexpected returned data from Check Effective Permission Right API method");
+			throw CatenisClientError("Unexpected returned data from Retrive Device ID Information API method");
 		}
 	}
 	catch (...) {
-		throw CatenisClientError("Unexpected returned data from Check Effective Permission Right API method");
+		throw CatenisClientError("Unexpected returned data from Retrive Device ID Information API method");
 	}
 }
