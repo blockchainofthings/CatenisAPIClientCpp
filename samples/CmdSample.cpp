@@ -43,6 +43,7 @@ int main(int argc, char* argv[])
 	cout << "    retrievePermissionRights <event_name>" << endl;
 	cout << "    listNotificationEvents" << endl;
 	cout << "    checkEffectivePermissionRight" << endl;
+	cout << "    retrieveDeviceIdInfo" << endl;
     cout << "    exit" << endl;
 
     bool exit = false;
@@ -443,6 +444,7 @@ int main(int argc, char* argv[])
 			// Provide an option to set the "Product Unique ID" flag
 			if (isProdUniqueId == "y") {
 				isProdUniqueId = "true";
+			}	
 
 			try
 			{
@@ -463,6 +465,43 @@ int main(int argc, char* argv[])
 			catch (...)
 			{
 				std::cerr << "Unknown error encountered: call to client.checkEffectivePermissionRight." << std::endl;
+			}
+		}
+		else if (method == "retrieveDeviceIdInfo")
+		{
+
+			string deviceId, isProdUniqueId = "false";
+
+			cin >> deviceId;
+
+			if (deviceId != "self") {
+				std::cout << "Is this a unique product ID?  (y or n)" << std::endl;
+				cin >> isProdUniqueId;
+			}
+			cin.ignore();
+
+			// Provide an option to set the "Product Unique ID" flag
+			if (isProdUniqueId == "y") {
+				isProdUniqueId = "true";
+			}
+
+			try
+			{
+				DeviceIdInfoResult data;
+				client.retrieveDeviceIdInfo(data, deviceId, isProdUniqueId);
+				/*
+
+
+
+				*/
+			}
+			catch (CatenisAPIException &errObject)
+			{
+				std::cerr << errObject.getErrorDescription() << std::endl;
+			}
+			catch (...)
+			{
+				std::cerr << "Unknown error encountered: call to client.retrieveDeviceIdInfo." << std::endl;
 			}
 		}
         else if (method == "exit") {

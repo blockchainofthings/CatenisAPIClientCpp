@@ -302,14 +302,25 @@ struct ListNotificationEventsResult
 typedef std::map<std::string, std::string> EffectivePermissionRightDictionary;
 
 /*
-* List Notification Events API method response structure
+* Check Effective Permission Right API method response structure
 *
-* @member notificationEvents : The notification events
+* @member Effective Permission Right : Permission right for the specified device
 */
 struct CheckEffectivePermissionRightResult
 {
 	EffectivePermissionRightDictionary effectivePermissionRight;
 };
+
+/*
+* List Notification Events API method response structure
+*
+* @member notificationEvents : The notification events
+*/
+struct DeviceIdInfoResult
+{
+	std::string effectivePermissionRight;
+};
+
 
 // Forward declare internals
 class CtnApiInternals;
@@ -483,6 +494,21 @@ public:
 	*/
 	void checkEffectivePermissionRight(CheckEffectivePermissionRightResult &data, std::string eventName, std::string deviceId, std::string isProdUniqueId);
 
+	/*
+	* Retrive Device Identification Info
+	*
+	* @param[out] data : The data to parse response into
+	*
+	* @param[in] deviceId   : ID of the virtual device the permission right applied to which should be retrieved.
+	*
+	* @param[in] isProdUniqueId   : Flag indicating ehether the supplied ID is a product unique ID (false as default)
+	*
+	* @return true if no error has occured.
+	*
+	* @see ctn::ListNotificationEventsResult
+	*
+	*/
+	void retrieveDeviceIdInfo(DeviceIdInfoResult &data, std::string deviceId, std::string isProdUniqueId);
 };
 
 }
