@@ -42,6 +42,7 @@ int main(int argc, char* argv[])
 	cout << "    listPermissionEvents" << endl;
 	cout << "    retrievePermissionRights <event_name>" << endl;
 	cout << "    listNotificationEvents" << endl;
+	cout << "    checkEffectivePermissionRight" << endl;
     cout << "    exit" << endl;
 
     bool exit = false;
@@ -300,7 +301,7 @@ int main(int argc, char* argv[])
 			}
 			catch (...)
 			{
-				std::cerr << "Unknown error encountered: call to client.sendMessage." << std::endl;
+				std::cerr << "Unknown error encountered: call to client.listPermissionEvents." << std::endl;
 			}
 		}
 		else if (method == "retrievePermissionRights")
@@ -401,7 +402,7 @@ int main(int argc, char* argv[])
 			}
 			catch (...)
 			{
-				std::cerr << "Unknown error encountered: call to client.sendMessage." << std::endl;
+				std::cerr << "Unknown error encountered: call to client.retrivePermissionEvents." << std::endl;
 			}
 		}
 		else if (method == "listNotificationEvents")
@@ -424,7 +425,44 @@ int main(int argc, char* argv[])
 			}
 			catch (...)
 			{
-				std::cerr << "Unknown error encountered: call to client.sendMessage." << std::endl;
+				std::cerr << "Unknown error encountered: call to client.listNotificationEvents." << std::endl;
+			}
+		}
+		else if (method == "checkEffectivePermissionRight")
+		{
+			string eventName, deviceId, isProdUniqueId = "false";
+
+			cin >> eventName >> deviceId;
+
+			if (deviceId != "self") {
+				std::cout << "Is this a unique product ID?  (y or n)" << std::endl;
+				cin >> isProdUniqueId;
+			}
+			cin.ignore();
+
+			// Provide an option to set the "Product Unique ID" flag
+			if (isProdUniqueId == "y") {
+				isProdUniqueId = "true";
+
+			try
+			{
+				CheckEffectivePermissionRightResult data;
+				client.checkEffectivePermissionRight(data,eventName, deviceId, isProdUniqueId);
+
+				for (EffectivePermissionRightDictionary::iterator it = data.effectivePermissionRight.begin(); it != data.effectivePermissionRight.end(); it++)
+				{
+					std::cout << "" << std::endl;
+					std::cout << "Effective Permission Right for ( " << it->first << " ) is >> \t" << it->second << std::endl;
+				}
+				
+			}
+			catch (CatenisAPIException &errObject)
+			{
+				std::cerr << errObject.getErrorDescription() << std::endl;
+			}
+			catch (...)
+			{
+				std::cerr << "Unknown error encountered: call to client.checkEffectivePermissionRight." << std::endl;
 			}
 		}
         else if (method == "exit") {

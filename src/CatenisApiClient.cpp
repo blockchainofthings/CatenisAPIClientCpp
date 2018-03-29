@@ -230,6 +230,28 @@ void ctn::CtnApiClient::listNotificationEvents(ListNotificationEventsResult &dat
 	this->internals_->parseListNotificationEvents(data, http_return_data);
 }
 
+// API Method: Check Effective Permission Events
+void ctn::CtnApiClient::checkEffectivePermissionRight(CheckEffectivePermissionRightResult &data, std::string eventName, std::string deviceId, std::string isProdUniqueId = "false")
+{
+
+	std::map<std::string, std::string> params;
+	std::map<std::string, std::string> queries;
+
+	queries["isProdUniqueId"] = "false"; // isProdUniqueId;
+
+	params[":eventName"] = eventName;
+	params[":deviceId"] = deviceId;
+
+#if defined(COM_SUPPORT_LIB_BOOST_ASIO)
+	json_spirit::mValue request_data;
+#elif defined(COM_SUPPORT_LIB_POCO)
+	Poco::JSON::Object request_data;
+#endif
+	std::string http_return_data;
+	this->internals_->httpRequest("GET", "permission/events/:eventName/rights/:deviceId", params, queries, request_data, http_return_data);
+	this->internals_->parseCheckEffectivePermissionRight(data, http_return_data);
+}
+
 // CtnApiClient Constructor
 ctn::CtnApiClient::CtnApiClient(std::string device_id, std::string api_access_secret, std::string host, std::string port, std::string environment, bool secure, std::string version)
 {

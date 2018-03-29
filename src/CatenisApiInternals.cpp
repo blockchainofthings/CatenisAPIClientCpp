@@ -1194,3 +1194,50 @@ void ctn::CtnApiInternals::parseListNotificationEvents(ListNotificationEventsRes
 		throw CatenisClientError("Unexpected returned data from List Notification Events API method");
 	}
 }
+
+// Private Method.
+void ctn::CtnApiInternals::parseCheckEffectivePermissionRight(CheckEffectivePermissionRightResult &user_return_data, std::string json_data)
+{
+	try {
+#if defined(COM_SUPPORT_LIB_BOOST_ASIO)
+		json_spirit::mValue result;
+		json_spirit::read_string_or_throw(json_data, result);
+
+		json_spirit::mObject &retObj = result.get_obj();
+
+		std::string const &status = retObj["status"].get_str();
+#elif defined(COM_SUPPORT_LIB_POCO)
+		Poco::JSON::Parser parser;
+		Poco::Dynamic::Var result = parser.parse(json_data);
+
+		Poco::JSON::Object::Ptr retObj = result.extract<Poco::JSON::Object::Ptr>();
+
+		std::string status = retObj->getValue<std::string>("status");
+#endif
+
+		if (status == "success") {
+#if defined(COM_SUPPORT_LIB_BOOST_ASIO)
+			json_spirit::mObject &data = retObj["data"].get_obj();
+
+			for (auto const &entry : data) {
+				user_return_data.effectivePermissionRight[entry.first] = entry.second.get_str();
+			}
+#elif defined(COM_SUPPORT_LIB_POCO)
+			Poco::JSON::Object::Ptr data = retObj->getObject("data");
+			
+			std::vector<std::string> entries;
+			data->getNames(entries);
+
+			for (std::vector<std::string>::iterator entryIdx = entries.begin(); entryIdx != entries.end(); entryIdx++) {
+				user_return_data.effectivePermissionRight[*entryIdx] = data->getValue<std::string>(*entryIdx);
+			}
+#endif
+		}
+		else {
+			throw CatenisClientError("Unexpected returned data from Check Effective Permission Right API method");
+		}
+	}
+	catch (...) {
+		throw CatenisClientError("Unexpected returned data from Check Effective Permission Right API method");
+	}
+}

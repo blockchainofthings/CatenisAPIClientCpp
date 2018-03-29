@@ -298,6 +298,19 @@ struct ListNotificationEventsResult
 	NotificationEventDictionary notificationEvents;
 };
 
+// Dictionary holding effective permission right description by check_device_ID
+typedef std::map<std::string, std::string> EffectivePermissionRightDictionary;
+
+/*
+* List Notification Events API method response structure
+*
+* @member notificationEvents : The notification events
+*/
+struct CheckEffectivePermissionRightResult
+{
+	EffectivePermissionRightDictionary effectivePermissionRight;
+};
+
 // Forward declare internals
 class CtnApiInternals;
 
@@ -430,7 +443,7 @@ public:
 	*
 	* @param[out] data : The data to parse response into
 	*
-	* @param[in] event name : name of the permission event to lookup
+	* @param[in] event name : Name of the permission event to lookup
 	*
 	* @return true if no error has occured.
 	*
@@ -451,6 +464,24 @@ public:
 	*
 	*/
 	void listNotificationEvents(ListNotificationEventsResult &data);
+
+	/*
+	* Check Effective Permission Right
+	*
+	* @param[out] data : The data to parse response into
+	*
+	* @param[in] event name : Name of the permission event to lookup
+	*
+	* @param[in] deviceId   : ID of the virtual device the permission right applied to which should be retrieved. 
+	*
+	* @param[in] isProdUniqueId   : Flag indicating ehether the supplied ID is a product unique ID (false as default)
+	*
+	* @return true if no error has occured.
+	*
+	* @see ctn::ListNotificationEventsResult
+	*
+	*/
+	void checkEffectivePermissionRight(CheckEffectivePermissionRightResult &data, std::string eventName, std::string deviceId, std::string isProdUniqueId);
 
 };
 
