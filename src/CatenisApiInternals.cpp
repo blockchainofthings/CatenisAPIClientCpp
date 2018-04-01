@@ -1199,24 +1199,14 @@ void ctn::CtnApiInternals::parseSetPermissionRights(SetPermissionRightsResult &u
 		if (status == "success") {
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
 			json_spirit::mObject &data = retObj["data"].get_obj();
-			/*
-			for (auto const &permissionEvent : data) {
-				user_return_data.permissionEvents[permissionEvent.first] = permissionEvent.second.get_str();
-			}
-			*/
+
+			std::cout << "THIS IS FOR TESTING\n\n"+json_data << std::endl; // ############ TESTING
+
+
 #elif defined(COM_SUPPORT_LIB_POCO)
 			Poco::JSON::Object::Ptr data = retObj->getObject("data");
 
-			std::cout << json_data << std::endl;
-
-			/*
-			std::vector<std::string> eventNameList;
-			data->getNames(eventNameList);
-
-			for (std::vector<std::string>::iterator eventNameIdx = eventNameList.begin(); eventNameIdx != eventNameList.end(); eventNameIdx++) {
-				user_return_data.permissionEvents[*eventNameIdx] = data->getValue<std::string>(*eventNameIdx);
-			}
-			*/
+			user_return_data.success = data->getValue<std::string>("success");
 #endif
 		}
 		else {

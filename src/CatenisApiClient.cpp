@@ -215,7 +215,7 @@ void ctn::CtnApiClient::retrievePermissionRights(RetrievePermissionRightsResult 
 }
 
 // API Method: Set Permission Rights
-void ctn::CtnApiClient::setPermissionRights(SetPermissionRightsResult &data, std::string eventName, std::string system, std::shared_ptr<SetRightsCtnNode> ctnNodeObj = nullptr, std::shared_ptr<SetRightsClient> clientObj = nullptr)
+void ctn::CtnApiClient::setPermissionRights(SetPermissionRightsResult &data, std::string eventName, std::string system, std::shared_ptr<SetRightsCtnNode> ctnNodeObj = nullptr, std::shared_ptr<SetRightsClient> clientObj = nullptr, std::shared_ptr<SetRightsDevice> deviceObj = nullptr)
 {
 	std::map<std::string, std::string> params;
 	std::map<std::string, std::string> queries;
@@ -236,14 +236,12 @@ void ctn::CtnApiClient::setPermissionRights(SetPermissionRightsResult &data, std
 	// //////////////////////////// Prepare JSON for Catenis Node ////////////////////////////////
 	if (ctnNodeObj != nullptr)
 	{
-		std::cout << "------------ JSON Catenis Node -----------------" << std::endl;
 		Poco::JSON::Object ctnNode;
 		if (ctnNodeObj->allowed.size() > 0)
 		{
 			Poco::JSON::Array allowCtnNode;
 			for (std::list<std::string>::const_iterator i = ctnNodeObj->allowed.begin(); i != ctnNodeObj->allowed.end(); ++i)
 			{
-				std::cout << "allow: \t" + *i << std::endl; // ############ TESTING
 				allowCtnNode.add(*i);
 			}
 			ctnNode.set("allow", allowCtnNode);
@@ -253,7 +251,6 @@ void ctn::CtnApiClient::setPermissionRights(SetPermissionRightsResult &data, std
 			Poco::JSON::Array denyCtnNode;
 			for (std::list<std::string>::const_iterator i = ctnNodeObj->denied.begin(); i != ctnNodeObj->denied.end(); ++i)
 			{
-				std::cout << "deny \t" + *i << std::endl; // ############ TESTING
 				denyCtnNode.add(*i);
 			}
 			ctnNode.set("deny", denyCtnNode);
@@ -263,7 +260,6 @@ void ctn::CtnApiClient::setPermissionRights(SetPermissionRightsResult &data, std
 			Poco::JSON::Array revokedCtnNode;
 			for (std::list<std::string>::const_iterator i = ctnNodeObj->revoked.begin(); i != ctnNodeObj->revoked.end(); ++i)
 			{
-				std::cout << "none: \t" + *i << std::endl; // ############ TESTING
 				revokedCtnNode.add(*i);
 			}
 			ctnNode.set("none", revokedCtnNode);
@@ -274,14 +270,12 @@ void ctn::CtnApiClient::setPermissionRights(SetPermissionRightsResult &data, std
 	// //////////////////////////// Prepare JSON for Client ////////////////////////////////
 	if (clientObj != nullptr)
 	{
-		std::cout << "------------ JSON Clients -----------------" << std::endl;
 		Poco::JSON::Object client;
 		if (clientObj->allowed.size() > 0)
 		{
 			Poco::JSON::Array allowClient;
 			for (std::list<std::string>::const_iterator i = clientObj->allowed.begin(); i != clientObj->allowed.end(); ++i)
 			{
-				std::cout << "allow \t" + *i << std::endl; // ############ TESTING
 				allowClient.add(*i);
 			}
 			client.set("allow", allowClient);
@@ -291,22 +285,26 @@ void ctn::CtnApiClient::setPermissionRights(SetPermissionRightsResult &data, std
 			Poco::JSON::Array denyClient;
 			for (std::list<std::string>::const_iterator i = clientObj->denied.begin(); i != clientObj->denied.end(); ++i)
 			{
-				std::cout << "deny \t" + *i << std::endl;  // ############ TESTING
 				denyClient.add(*i);
 			}
 			client.set("deny", denyClient);
-}
+		}
 		if (clientObj->revoked.size() > 0)
 		{
 			Poco::JSON::Array revokedClient;
 			for (std::list<std::string>::const_iterator i = clientObj->revoked.begin(); i != clientObj->revoked.end(); ++i)
 			{
-				std::cout << "none: \t" + *i << std::endl;  // ############ TESTING
 				revokedClient.add(*i);
 			}
 			client.set("none", revokedClient);
 		}
 		request_data.set("client", client);
+	}
+
+	// //////////////////////////// Prepare JSON for Client ////////////////////////////////
+	if (deviceObj != nullptr)
+	{
+		Poco::JSON::Object device;
 	}
 
 #endif

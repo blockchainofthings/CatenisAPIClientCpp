@@ -393,8 +393,25 @@ int main(int argc, char* argv[])
 							std::cout << "" << std::endl;
 						}
 					}
-				}
 
+					std::cout << "" << std::endl;
+					std::cout << "DEVICES Denied: " << std::endl;
+					std::cout << "----------------------------------------------" << std::endl;
+					std::list<std::shared_ptr<DeviceInfo>> denied = data.device->denied;
+					if (denied.size() > 0) {
+						std::list<std::shared_ptr<DeviceInfo>>::iterator it = denied.begin();
+						for (; it != denied.end(); it++)
+						{
+							DeviceInfo ngDev = *(*it);
+							std::cout << "DeviceId\t\t: " << ngDev.deviceId << endl;
+							if (!ngDev.name.empty())
+								std::cout << "DeviceName\t\t: " << ngDev.name << endl;
+							if (!ngDev.prodUniqueId.empty())
+								std::cout << "ProdUniqueId\t: " << ngDev.prodUniqueId << endl;
+							std::cout << "" << std::endl;
+						}
+					}
+				}
 			}
 			catch (CatenisAPIException &errObject)
 			{
@@ -523,49 +540,53 @@ int main(int argc, char* argv[])
 			string eventName;
 			cin >> eventName;
 
-			
-
 			// ########### Editable - Set the various permission rights  ###################
-
-			// /////////// SYSTEM
-			std::string systemRight = "allow";
-			// /////////// CATENIS NODE
+			// ------ SYSTEM LEVEL
+			std::string systemRight = "allow"; 
+			// ------ CATNIS NODE LEVEL
 			char const *setAllowedCtnNode[]	= { "thisIsAnotherRandomNodeIndex" };
 			char const *setDeniedCtnNode[]	= { "thisIsARandomNodeIndex" };
 			char const *setNoneCtnNode[]    = { "thisIsDefinitelyAnIndex" };
-			// /////////// CLIENTS
+			// ------ CLIENT LEVEL
 			char const *setAllowedClients[] = { "self"};
 			char const *setDeniedClients[]	= { "cjNhuvGMUYoepFcRZadP" };
-			char const *setRevokedClients[]    = { "cjNhuvGMUYoepFcRZadX" };
-			// /////////// DEVICES
+			char const *setRevokedClients[] = { "cjNhuvGMUYoepFcRZadX" };
+			// ------ DEVICE LEVEL
+			SetRightsDeviceInfo *setAllowedDevice(new SetRightsDeviceInfo("dv3htgvK7hjnKx3617Re","false"));
 
 			// ########### Store Permission Rights into the appropriate List of Strings ###################
-			// /////////// CATENIS NODE
+			// ------ CATNIS NODE LEVEL
 			std::list<std::string> allowedCtnNodes(setAllowedCtnNode, setAllowedCtnNode + sizeof(setAllowedCtnNode) / sizeof(*setAllowedCtnNode));
 			std::list<std::string> deniedCtnNodes(setDeniedCtnNode, setDeniedCtnNode + sizeof(setDeniedCtnNode) / sizeof(*setDeniedCtnNode));
 			std::list<std::string> revokedCtnNodes(setNoneCtnNode, setNoneCtnNode + sizeof(setNoneCtnNode) / sizeof(*setNoneCtnNode));
-			// /////////// CLIENTS
+			// ------ CLIENT LEVEL
 			std::list<std::string> allowedClients(setAllowedClients, setAllowedClients + sizeof(setAllowedClients) / sizeof(*setAllowedClients));
 			std::list<std::string> deniedClients;// (setDeniedClients, setDeniedClients + sizeof(setDeniedClients) / sizeof(*setDeniedClients));
 			std::list<std::string> revokedClients;// (setRevokedClients, setRevokedClients + sizeof(setRevokedClients) / sizeof(*setRevokedClients));
-			// /////////// DEVICES
-			//std::list<std::shared_ptr<DeviceInfo>> allowedDevices;
-			//std::list<std::shared_ptr<DeviceInfo>> deniedDevices;
-
+			// ------ DEVICE LEVEL
+			std::list<std::shared_ptr<SetRightsDeviceInfo>> allowedDevices;
+			std::list<std::shared_ptr<SetRightsDeviceInfo>> deniedDevices;
+			std::list<std::shared_ptr<SetRightsDeviceInfo>> revokedDevices;
 
 			// ########### Store Lists of Strings into appropriate structures  ###################
-			// /////////// CATENIS NODE
+			// ------ CATNIS NODE LEVEL
 			std::shared_ptr<SetRightsCtnNode> ctnNodeRights;// (new SetRightsCtnNode(allowedCtnNodes, deniedCtnNodes, revokedCtnNodes));
-			// /////////// CLIENTS
+			// ------ CLIENT LEVEL
 			std::shared_ptr<SetRightsClient> clientRights(new SetRightsClient(allowedClients, deniedClients, revokedClients));
+			// ------ DEVICELEVEL
+			std::shared_ptr<SetRightsDevice> deviceRights(new SetRightsDevice(allowedDevices, deniedDevices, revokedDevices));
 
 			try
 			{
 				SetPermissionRightsResult data;
-				client.setPermissionRights(data, eventName, systemRight, ctnNodeRights, clientRights);
-
-				std::cout << "executed sucessfully" << std::endl; // ################ FOR TESTING
-
+				client.setPermissionRights(data, eventName, systemRight, ctnNodeRights, clientRights,deviceRights);
+				if (data.success == "true")
+				{
+					std::cout << "\nCongratulations.  Permission Rights for [ " + eventName + " ] were set successfully" << std::endl;
+				}
+				else {
+					std::cout << "Sorry. Setting Permission Rights for " + eventName + " was unsuccessful" << std::endl;
+				}
 			}
 			catch (CatenisAPIException &errObject)
 			{

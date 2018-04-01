@@ -286,6 +286,24 @@ struct RetrievePermissionRightsResult
 };
 
 /*
+* Device info structure for Set Permission Rights
+*
+* @member deviceId : Catenis ID of device.
+* @member name : Device name.
+* @member prodUniqueId : Device's product unique ID.
+*/
+
+struct SetRightsDeviceInfo
+{
+	std::string Id;
+	std::string prodUniqueId;
+
+	SetRightsDeviceInfo(std::string device_id, std::string prod_unique_id)
+		: Id(device_id), prodUniqueId(prod_unique_id) {}
+	~SetRightsDeviceInfo() {}
+};
+
+/*
 * Set Permission Rights at Device Level structure (Array of Objects)
 *
 * @member allowed : Object structure of allowed virtual devices
@@ -295,14 +313,14 @@ struct RetrievePermissionRightsResult
 */
 struct SetRightsDevice
 {
-	std::list< std::shared_ptr<DeviceInfo> > allowed;
-	std::list< std::shared_ptr<DeviceInfo> > denied;
-	std::list< std::shared_ptr<DeviceInfo> > revoked;
+	std::list< std::shared_ptr<SetRightsDeviceInfo> > allowed;
+	std::list< std::shared_ptr<SetRightsDeviceInfo> > denied;
+	std::list< std::shared_ptr<SetRightsDeviceInfo> > revoked;
 
 	SetRightsDevice(
-		std::list< std::shared_ptr<DeviceInfo> > allowedDevices,
-		std::list< std::shared_ptr<DeviceInfo> > deniedDevices,
-		std::list< std::shared_ptr<DeviceInfo> > noneDevices)
+		std::list< std::shared_ptr<SetRightsDeviceInfo> > allowedDevices,
+		std::list< std::shared_ptr<SetRightsDeviceInfo> > deniedDevices,
+		std::list< std::shared_ptr<SetRightsDeviceInfo> > noneDevices)
 		: allowed(allowedDevices), denied(deniedDevices), revoked(noneDevices) {}
 	~SetRightsDevice() {}
 };
@@ -351,17 +369,17 @@ struct SetRightsClient
 	~SetRightsClient() {}
 };
 
-// Dictionary holding set permission rights description result
+// Dictionary holding Set Permission Rights description result
 typedef std::map<std::string, std::string> SetPermissionRightsDictionary;
 
 /*
-* List Permission Events API method response structure
+* Set Permission Rights API method response structure
 *
-* @member permissionEvents : The permission events
+* @member status : The result of the 
 */
 struct SetPermissionRightsResult
 {
-	SetPermissionRightsDictionary status;
+	std::string success;
 };
 
 // Dictionary holding notification event description by notification event name
@@ -595,7 +613,7 @@ public:
 	* @see ctn::SetPermissionRightsResult
 	*
 	*/
-	void setPermissionRights(SetPermissionRightsResult &data, std::string eventName, std::string system, std::shared_ptr<SetRightsCtnNode> cntNodesObj, std::shared_ptr<SetRightsClient> clientObj);
+	void setPermissionRights(SetPermissionRightsResult &data, std::string eventName, std::string system, std::shared_ptr<SetRightsCtnNode> cntNodesObj, std::shared_ptr<SetRightsClient> clientObj, std::shared_ptr<SetRightsDevice> deviceObj);
 
 	/*
 	* List Notification Events
