@@ -41,8 +41,9 @@ int main(int argc, char* argv[])
     cout << "    list" << endl;
 	cout << "    listPermissionEvents" << endl;
 	cout << "    retrievePermissionRights <event_name>" << endl;
+	cout << "    setPermissionRights" << endl;
 	cout << "    listNotificationEvents" << endl;
-	cout << "    checkEffectivePermissionRight" << endl;
+	cout << "    checkEffectivePermissionRight <event_name> <deviceId> [<isProdUniqueId>]" << endl;
 	cout << "    retrieveDeviceIdInfo" << endl;
     cout << "    exit" << endl;
 
@@ -369,31 +370,29 @@ int main(int argc, char* argv[])
 							std::cout << "\t\t\t" + *i << std::endl;
 						}
 					}
+				}
 
-					/* DEVICE LEVEL PERMISSION RIGHTS */
-					if (data.device != nullptr)
-					{
-						std::cout << "" << std::endl;
-						std::cout << "DEVICES Allowed: " << std::endl;
-						std::cout << "----------------------------------------------" << std::endl;
-						std::list<std::shared_ptr<DeviceInfo>> allowed = data.device->allowed;
+				/* DEVICE LEVEL PERMISSION RIGHTS */
+				if (data.device != nullptr)
+				{
+					std::cout << "" << std::endl;
+					std::cout << "DEVICES Allowed: " << std::endl;
+					std::cout << "----------------------------------------------" << std::endl;
+					std::list<std::shared_ptr<DeviceInfo>> allowed = data.device->allowed;
 
-						if (allowed.size() > 0) {
-							std::list<std::shared_ptr<DeviceInfo>>::iterator it = allowed.begin();
-							for (; it != allowed.end(); it++)
-							{
-								DeviceInfo okDev = *(*it);
-								std::cout << "DeviceId\t\t: " << okDev.deviceId << endl;
-								if (!okDev.name.empty())
-									std::cout << "DeviceName\t\t: " << okDev.name << endl;
-								if (!okDev.prodUniqueId.empty())
-									std::cout << "ProdUniqueId\t: " << okDev.prodUniqueId << endl;
-								std::cout << "" << std::endl;
-							}
+					if (allowed.size() > 0) {
+						std::list<std::shared_ptr<DeviceInfo>>::iterator it = allowed.begin();
+						for (; it != allowed.end(); it++)
+						{
+							DeviceInfo okDev = *(*it);
+							std::cout << "DeviceId\t\t: " << okDev.deviceId << endl;
+							if (!okDev.name.empty())
+								std::cout << "DeviceName\t\t: " << okDev.name << endl;
+							if (!okDev.prodUniqueId.empty())
+								std::cout << "ProdUniqueId\t: " << okDev.prodUniqueId << endl;
+							std::cout << "" << std::endl;
 						}
-
 					}
-
 				}
 
 			}
@@ -435,17 +434,6 @@ int main(int argc, char* argv[])
 
 			cin >> eventName >> deviceId;
 
-			if (deviceId != "self") {
-				std::cout << "Is this a unique product ID?  (y or n)" << std::endl;
-				cin >> isProdUniqueId;
-			}
-			cin.ignore();
-
-			// Provide an option to set the "Product Unique ID" flag
-			if (isProdUniqueId == "y") {
-				isProdUniqueId = "true";
-			}	
-
 			try
 			{
 				CheckEffectivePermissionRightResult data;
@@ -473,17 +461,6 @@ int main(int argc, char* argv[])
 			string deviceId, isProdUniqueId = "false";
 
 			cin >> deviceId;
-
-			if (deviceId != "self") {
-				std::cout << "Is this a unique product ID?  (y or n)" << std::endl;
-				cin >> isProdUniqueId;
-			}
-			cin.ignore();
-
-			// Provide an option to set the "Product Unique ID" flag
-			if (isProdUniqueId == "y") {
-				isProdUniqueId = "true";
-			}
 
 			try
 			{
@@ -538,6 +515,65 @@ int main(int argc, char* argv[])
 			catch (...)
 			{
 				std::cerr << "Unknown error encountered: call to client.retrieveDeviceIdInfo." << std::endl;
+			}
+		}
+		else if (method == "setPermissionRights")
+		{
+
+			string eventName;
+			cin >> eventName;
+
+			
+
+			// ########### Editable - Set the various permission rights  ###################
+
+			// /////////// SYSTEM
+			std::string systemRight = "allow";
+			// /////////// CATENIS NODE
+			char const *setAllowedCtnNode[]	= { "thisIsAnotherRandomNodeIndex" };
+			char const *setDeniedCtnNode[]	= { "thisIsARandomNodeIndex" };
+			char const *setNoneCtnNode[]    = { "thisIsDefinitelyAnIndex" };
+			// /////////// CLIENTS
+			char const *setAllowedClients[] = { "self"};
+			char const *setDeniedClients[]	= { "cjNhuvGMUYoepFcRZadP" };
+			char const *setRevokedClients[]    = { "cjNhuvGMUYoepFcRZadX" };
+			// /////////// DEVICES
+
+			// ########### Store Permission Rights into the appropriate List of Strings ###################
+			// /////////// CATENIS NODE
+			std::list<std::string> allowedCtnNodes(setAllowedCtnNode, setAllowedCtnNode + sizeof(setAllowedCtnNode) / sizeof(*setAllowedCtnNode));
+			std::list<std::string> deniedCtnNodes(setDeniedCtnNode, setDeniedCtnNode + sizeof(setDeniedCtnNode) / sizeof(*setDeniedCtnNode));
+			std::list<std::string> revokedCtnNodes(setNoneCtnNode, setNoneCtnNode + sizeof(setNoneCtnNode) / sizeof(*setNoneCtnNode));
+			// /////////// CLIENTS
+			std::list<std::string> allowedClients(setAllowedClients, setAllowedClients + sizeof(setAllowedClients) / sizeof(*setAllowedClients));
+			std::list<std::string> deniedClients;// (setDeniedClients, setDeniedClients + sizeof(setDeniedClients) / sizeof(*setDeniedClients));
+			std::list<std::string> revokedClients;// (setRevokedClients, setRevokedClients + sizeof(setRevokedClients) / sizeof(*setRevokedClients));
+			// /////////// DEVICES
+			//std::list<std::shared_ptr<DeviceInfo>> allowedDevices;
+			//std::list<std::shared_ptr<DeviceInfo>> deniedDevices;
+
+
+			// ########### Store Lists of Strings into appropriate structures  ###################
+			// /////////// CATENIS NODE
+			std::shared_ptr<SetRightsCtnNode> ctnNodeRights;// (new SetRightsCtnNode(allowedCtnNodes, deniedCtnNodes, revokedCtnNodes));
+			// /////////// CLIENTS
+			std::shared_ptr<SetRightsClient> clientRights(new SetRightsClient(allowedClients, deniedClients, revokedClients));
+
+			try
+			{
+				SetPermissionRightsResult data;
+				client.setPermissionRights(data, eventName, systemRight, ctnNodeRights, clientRights);
+
+				std::cout << "executed sucessfully" << std::endl; // ################ FOR TESTING
+
+			}
+			catch (CatenisAPIException &errObject)
+			{
+				std::cerr << errObject.getErrorDescription() << std::endl;
+			}
+			catch (...)
+			{
+				std::cerr << "Unknown error encountered: call to client.setPermissionRights." << std::endl;
 			}
 		}
         else if (method == "exit") {

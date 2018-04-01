@@ -234,8 +234,8 @@ struct PermissionRightsDevice
 /*
 * Permission Rights Catenis Level structure
 *
-* @member allowed : List of allowed rights
-* @member denied : List of denied rights
+* @member allowed : List of allowed catenis NOdes
+* @member denied : List of denied catenis Nodes
 *
 */
 struct PermissionRightsCatenisNode
@@ -253,8 +253,8 @@ struct PermissionRightsCatenisNode
 /*
 * Permission Rights Client Level structure
 *
-* @member allowed : List of allowed rights
-* @member denied : List of denied rights
+* @member allowed : List of allowed clients
+* @member denied : List of denied clients
 *
 */
 struct PermissionRightsClient
@@ -283,6 +283,85 @@ struct RetrievePermissionRightsResult
 	std::shared_ptr<PermissionRightsCatenisNode> catenisNode;
 	std::shared_ptr<PermissionRightsClient> client;
 	std::shared_ptr<PermissionRightsDevice> device;
+};
+
+/*
+* Set Permission Rights at Device Level structure (Array of Objects)
+*
+* @member allowed : Object structure of allowed virtual devices
+* @member denied  : Object structure of denied virtual devices
+* @member none    : Object structure of virtual devices for which Rights should be removed
+*
+*/
+struct SetRightsDevice
+{
+	std::list< std::shared_ptr<DeviceInfo> > allowed;
+	std::list< std::shared_ptr<DeviceInfo> > denied;
+	std::list< std::shared_ptr<DeviceInfo> > revoked;
+
+	SetRightsDevice(
+		std::list< std::shared_ptr<DeviceInfo> > allowedDevices,
+		std::list< std::shared_ptr<DeviceInfo> > deniedDevices,
+		std::list< std::shared_ptr<DeviceInfo> > noneDevices)
+		: allowed(allowedDevices), denied(deniedDevices), revoked(noneDevices) {}
+	~SetRightsDevice() {}
+};
+
+/*
+* Set Permission Rights Catenis Node Level structure
+*
+* @member allowed : List of allowed Catenis Nodes
+* @member denied : List of denied Catenis Nodes
+* @member none : List of Catenis Nodes for which Rights should be removed
+*
+*/
+struct SetRightsCtnNode
+{
+	std::list<std::string> allowed;
+	std::list<std::string> denied;
+	std::list<std::string> revoked;
+
+	SetRightsCtnNode(
+		std::list<std::string> allowedCtnNodes,
+		std::list<std::string> deniedCtnNodes,
+		std::list<std::string> noneCtnNodes)
+		: allowed(allowedCtnNodes), denied(deniedCtnNodes), revoked(noneCtnNodes) {}
+	~SetRightsCtnNode() {}
+};
+
+/*
+* Set Permission Rights Client Level structure
+*
+* @member allowed : List of allowed clients
+* @member denied : List of denied clients
+* @member none : List of clients for which Rights should be removed
+*
+*/
+struct SetRightsClient
+{
+	std::list<std::string> allowed;
+	std::list<std::string> denied;
+	std::list<std::string> revoked;
+
+	SetRightsClient(
+		std::list<std::string> allowedClients,
+		std::list<std::string> deniedClients,
+		std::list<std::string> noneClients)
+		: allowed(allowedClients), denied(deniedClients), revoked(noneClients) {}
+	~SetRightsClient() {}
+};
+
+// Dictionary holding set permission rights description result
+typedef std::map<std::string, std::string> SetPermissionRightsDictionary;
+
+/*
+* List Permission Events API method response structure
+*
+* @member permissionEvents : The permission events
+*/
+struct SetPermissionRightsResult
+{
+	SetPermissionRightsDictionary status;
 };
 
 // Dictionary holding notification event description by notification event name
@@ -358,6 +437,7 @@ struct DeviceIdInfoResult
 	std::shared_ptr<ClientInfo> client;
 	std::shared_ptr<DeviceInfo> device;
 };
+
 
 
 // Forward declare internals
@@ -496,11 +576,26 @@ public:
 	*
 	* @return true if no error has occured.
 	*
-	* @see ctn::ListPermissionEventsResult
+	* @see ctn::RetrievePermissionRightsResult
 	*
 	*/
 	void retrievePermissionRights(RetrievePermissionRightsResult &data, std::string eventName);
 
+	/*
+	* Set Permission Rights
+	*
+	* @param[out] data : The data to parse response into
+	*
+	* @param[in] event name : Name of the permission event to lookup
+	*
+	* @param[in] requestObj : A JSON containing the Catenis Nodes, Clients, and Devices and the rights assigned to them
+	*
+	* @return true if no error has occured.
+	*
+	* @see ctn::SetPermissionRightsResult
+	*
+	*/
+	void setPermissionRights(SetPermissionRightsResult &data, std::string eventName, std::string system, std::shared_ptr<SetRightsCtnNode> cntNodesObj, std::shared_ptr<SetRightsClient> clientObj);
 
 	/*
 	* List Notification Events
@@ -527,7 +622,7 @@ public:
 	*
 	* @return true if no error has occured.
 	*
-	* @see ctn::ListNotificationEventsResult
+	* @see ctn::CheckEffectivePermissionRightResult
 	*
 	*/
 	void checkEffectivePermissionRight(CheckEffectivePermissionRightResult &data, std::string eventName, std::string deviceId, std::string isProdUniqueId);
@@ -543,7 +638,7 @@ public:
 	*
 	* @return true if no error has occured.
 	*
-	* @see ctn::ListNotificationEventsResult
+	* @see ctn::DeviceIdInfoResult
 	*
 	*/
 	void retrieveDeviceIdInfo(DeviceIdInfoResult &data, std::string deviceId, std::string isProdUniqueId);

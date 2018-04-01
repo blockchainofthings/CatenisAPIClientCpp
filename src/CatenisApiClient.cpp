@@ -214,6 +214,107 @@ void ctn::CtnApiClient::retrievePermissionRights(RetrievePermissionRightsResult 
 	this->internals_->parseRetrievePermissionRights(data, http_return_data);
 }
 
+// API Method: Set Permission Rights
+void ctn::CtnApiClient::setPermissionRights(SetPermissionRightsResult &data, std::string eventName, std::string system, std::shared_ptr<SetRightsCtnNode> ctnNodeObj = nullptr, std::shared_ptr<SetRightsClient> clientObj = nullptr)
+{
+	std::map<std::string, std::string> params;
+	std::map<std::string, std::string> queries;
+
+	params[":eventName"] = eventName;
+
+#if defined(COM_SUPPORT_LIB_BOOST_ASIO)
+	json_spirit::mValue request_data;
+#elif defined(COM_SUPPORT_LIB_POCO)
+	Poco::JSON::Object request_data;
+
+	std::list<std::string> allowed;
+	std::list<std::string> denied;
+
+	//if (!system.empty())
+	//	request_data.set("system", "deny");
+
+	// //////////////////////////// Prepare JSON for Catenis Node ////////////////////////////////
+	if (ctnNodeObj != nullptr)
+	{
+		std::cout << "------------ JSON Catenis Node -----------------" << std::endl;
+		Poco::JSON::Object ctnNode;
+		if (ctnNodeObj->allowed.size() > 0)
+		{
+			Poco::JSON::Array allowCtnNode;
+			for (std::list<std::string>::const_iterator i = ctnNodeObj->allowed.begin(); i != ctnNodeObj->allowed.end(); ++i)
+			{
+				std::cout << "allow: \t" + *i << std::endl; // ############ TESTING
+				allowCtnNode.add(*i);
+			}
+			ctnNode.set("allow", allowCtnNode);
+		}
+		if (ctnNodeObj->denied.size() > 0)
+		{
+			Poco::JSON::Array denyCtnNode;
+			for (std::list<std::string>::const_iterator i = ctnNodeObj->denied.begin(); i != ctnNodeObj->denied.end(); ++i)
+			{
+				std::cout << "deny \t" + *i << std::endl; // ############ TESTING
+				denyCtnNode.add(*i);
+			}
+			ctnNode.set("deny", denyCtnNode);
+		}
+		if (ctnNodeObj->revoked.size() > 0)
+		{
+			Poco::JSON::Array revokedCtnNode;
+			for (std::list<std::string>::const_iterator i = ctnNodeObj->revoked.begin(); i != ctnNodeObj->revoked.end(); ++i)
+			{
+				std::cout << "none: \t" + *i << std::endl; // ############ TESTING
+				revokedCtnNode.add(*i);
+			}
+			ctnNode.set("none", revokedCtnNode);
+		}
+		request_data.set("catenisNode", ctnNode);
+	}
+
+	// //////////////////////////// Prepare JSON for Client ////////////////////////////////
+	if (clientObj != nullptr)
+	{
+		std::cout << "------------ JSON Clients -----------------" << std::endl;
+		Poco::JSON::Object client;
+		if (clientObj->allowed.size() > 0)
+		{
+			Poco::JSON::Array allowClient;
+			for (std::list<std::string>::const_iterator i = clientObj->allowed.begin(); i != clientObj->allowed.end(); ++i)
+			{
+				std::cout << "allow \t" + *i << std::endl; // ############ TESTING
+				allowClient.add(*i);
+			}
+			client.set("allow", allowClient);
+		}
+		if (clientObj->denied.size() > 0)
+		{
+			Poco::JSON::Array denyClient;
+			for (std::list<std::string>::const_iterator i = clientObj->denied.begin(); i != clientObj->denied.end(); ++i)
+			{
+				std::cout << "deny \t" + *i << std::endl;  // ############ TESTING
+				denyClient.add(*i);
+			}
+			client.set("deny", denyClient);
+}
+		if (clientObj->revoked.size() > 0)
+		{
+			Poco::JSON::Array revokedClient;
+			for (std::list<std::string>::const_iterator i = clientObj->revoked.begin(); i != clientObj->revoked.end(); ++i)
+			{
+				std::cout << "none: \t" + *i << std::endl;  // ############ TESTING
+				revokedClient.add(*i);
+			}
+			client.set("none", revokedClient);
+		}
+		request_data.set("client", client);
+	}
+
+#endif
+	std::string http_return_data;
+	this->internals_->httpRequest("POST", "permission/events/:eventName/rights", params, queries, request_data, http_return_data);
+	this->internals_->parseSetPermissionRights(data, http_return_data);
+}
+
 // API Method: List Notification Events
 void ctn::CtnApiClient::listNotificationEvents(ListNotificationEventsResult &data)
 {
