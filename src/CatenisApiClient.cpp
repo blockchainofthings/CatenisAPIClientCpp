@@ -230,8 +230,8 @@ void ctn::CtnApiClient::setPermissionRights(SetPermissionRightsResult &data, std
 	std::list<std::string> allowed;
 	std::list<std::string> denied;
 
-	//if (!system.empty())
-	//	request_data.set("system", "deny");
+	if (!system.empty())
+		request_data.set("system", system);
 
 	// //////////////////////////// Prepare JSON for Catenis Node ////////////////////////////////
 	if (ctnNodeObj != nullptr)
@@ -242,27 +242,33 @@ void ctn::CtnApiClient::setPermissionRights(SetPermissionRightsResult &data, std
 			Poco::JSON::Array allowCtnNode;
 			for (std::list<std::string>::const_iterator i = ctnNodeObj->allowed.begin(); i != ctnNodeObj->allowed.end(); ++i)
 			{
-				allowCtnNode.add(*i);
+				if (!(*i).empty())
+					allowCtnNode.add(*i);
 			}
-			ctnNode.set("allow", allowCtnNode);
+			if(allowCtnNode.size() > 0)
+				ctnNode.set("allow", allowCtnNode);
 		}
 		if (ctnNodeObj->denied.size() > 0)
 		{
 			Poco::JSON::Array denyCtnNode;
 			for (std::list<std::string>::const_iterator i = ctnNodeObj->denied.begin(); i != ctnNodeObj->denied.end(); ++i)
 			{
-				denyCtnNode.add(*i);
+				if (!(*i).empty())
+					denyCtnNode.add(*i);
 			}
-			ctnNode.set("deny", denyCtnNode);
+			if (denyCtnNode.size() > 0)
+				ctnNode.set("deny", denyCtnNode);
 		}
 		if (ctnNodeObj->revoked.size() > 0)
 		{
-			Poco::JSON::Array revokedCtnNode;
+			Poco::JSON::Array revokeCtnNode;
 			for (std::list<std::string>::const_iterator i = ctnNodeObj->revoked.begin(); i != ctnNodeObj->revoked.end(); ++i)
 			{
-				revokedCtnNode.add(*i);
+				if (!(*i).empty())
+					revokeCtnNode.add(*i);
 			}
-			ctnNode.set("none", revokedCtnNode);
+			if (revokeCtnNode.size() > 0)
+				ctnNode.set("none", revokeCtnNode);
 		}
 		request_data.set("catenisNode", ctnNode);
 	}
@@ -276,35 +282,90 @@ void ctn::CtnApiClient::setPermissionRights(SetPermissionRightsResult &data, std
 			Poco::JSON::Array allowClient;
 			for (std::list<std::string>::const_iterator i = clientObj->allowed.begin(); i != clientObj->allowed.end(); ++i)
 			{
-				allowClient.add(*i);
+				if (!(*i).empty())
+					allowClient.add(*i);
 			}
-			client.set("allow", allowClient);
+			if (allowClient.size() > 0)
+				client.set("allow", allowClient);
 		}
 		if (clientObj->denied.size() > 0)
 		{
 			Poco::JSON::Array denyClient;
 			for (std::list<std::string>::const_iterator i = clientObj->denied.begin(); i != clientObj->denied.end(); ++i)
 			{
-				denyClient.add(*i);
+				if (!(*i).empty())
+					denyClient.add(*i);
 			}
-			client.set("deny", denyClient);
+			if (denyClient.size() > 0)
+				client.set("deny", denyClient);
 		}
 		if (clientObj->revoked.size() > 0)
 		{
-			Poco::JSON::Array revokedClient;
+			Poco::JSON::Array revokeClient;
 			for (std::list<std::string>::const_iterator i = clientObj->revoked.begin(); i != clientObj->revoked.end(); ++i)
 			{
-				revokedClient.add(*i);
+				if (!(*i).empty())
+					revokeClient.add(*i);
 			}
-			client.set("none", revokedClient);
+			if (revokeClient.size() > 0)
+				client.set("none", revokeClient);
 		}
 		request_data.set("client", client);
 	}
 
-	// //////////////////////////// Prepare JSON for Client ////////////////////////////////
+	// //////////////////////////// Prepare JSON for Device ////////////////////////////////
 	if (deviceObj != nullptr)
 	{
 		Poco::JSON::Object device;
+		if (deviceObj->allowed.size() > 0)
+		{			
+			Poco::JSON::Array allowDevice;
+			Poco::JSON::Object tmpObj;
+			for (std::list<std::shared_ptr<SetRightsDeviceInfo>>::iterator i = deviceObj->allowed.begin(); i != deviceObj->allowed.end(); ++i)
+			{
+				if (!(*(*i)).id.empty())
+				{
+					tmpObj.set("id", (*(*i)).id);
+					tmpObj.set("isProdUniqueId", (*(*i)).isProdUniqueId);
+					allowDevice.add(tmpObj);
+				}
+			}
+			if (allowDevice.size() > 0)
+				device.set("allow", allowDevice);
+		}
+		if (deviceObj->denied.size() > 0)
+		{
+			Poco::JSON::Array denyDevice;
+			Poco::JSON::Object tmpObj;
+			for (std::list<std::shared_ptr<SetRightsDeviceInfo>>::iterator i = deviceObj->denied.begin(); i != deviceObj->denied.end(); ++i)
+			{
+				if (!(*(*i)).id.empty())
+				{
+					tmpObj.set("id", (*(*i)).id);
+					tmpObj.set("isProdUniqueId", (*(*i)).isProdUniqueId);
+					denyDevice.add(tmpObj);
+				}
+			}
+			if (denyDevice.size() > 0)
+				device.set("deny", denyDevice);
+		}
+		if (deviceObj->revoked.size() > 0)
+		{
+			Poco::JSON::Array revokeDevice;
+			Poco::JSON::Object tmpObj;
+			for (std::list<std::shared_ptr<SetRightsDeviceInfo>>::iterator i = deviceObj->revoked.begin(); i != deviceObj->revoked.end(); ++i)
+			{
+				if (!(*(*i)).id.empty())
+				{
+					tmpObj.set("id", (*(*i)).id);
+					tmpObj.set("isProdUniqueId", (*(*i)).isProdUniqueId);
+					revokeDevice.add(tmpObj);
+				}
+			}
+			if (revokeDevice.size() > 0)
+				device.set("none", revokeDevice);
+		}
+		request_data.set("device", device);
 	}
 
 #endif

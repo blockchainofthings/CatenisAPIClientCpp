@@ -295,11 +295,11 @@ struct RetrievePermissionRightsResult
 
 struct SetRightsDeviceInfo
 {
-	std::string Id;
-	std::string prodUniqueId;
+	std::string id;
+	bool isProdUniqueId;
 
-	SetRightsDeviceInfo(std::string device_id, std::string prod_unique_id)
-		: Id(device_id), prodUniqueId(prod_unique_id) {}
+	SetRightsDeviceInfo(std::string id_arg, bool is_prod_unique_id)
+		: id(id_arg), isProdUniqueId(is_prod_unique_id) {}
 	~SetRightsDeviceInfo() {}
 };
 
