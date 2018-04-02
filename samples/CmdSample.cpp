@@ -41,10 +41,10 @@ int main(int argc, char* argv[])
     cout << "    list" << endl;
 	cout << "    listPermissionEvents" << endl;
 	cout << "    retrievePermissionRights <event_name>" << endl;
-	cout << "    setPermissionRights" << endl;
+	cout << "    setPermissionRights <event_name>" << endl;
 	cout << "    listNotificationEvents" << endl;
 	cout << "    checkEffectivePermissionRight <event_name> <deviceId> [<isProdUniqueId>]" << endl;
-	cout << "    retrieveDeviceIdInfo" << endl;
+	cout << "    retrieveDeviceIdInfo <deviceId>" << endl;
     cout << "    exit" << endl;
 
     bool exit = false;
@@ -613,7 +613,7 @@ int main(int argc, char* argv[])
 			{
 				SetPermissionRightsResult data;
 				client.setPermissionRights(data, eventName, systemRight, ctnNodeRights, clientRights, deviceRights);
-				if (data.success == "true")
+				if (data.success == true)
 				{
 					std::cout << "\nCongratulations.  Permission Rights for [ " + eventName + " ] were set successfully" << std::endl;
 				}

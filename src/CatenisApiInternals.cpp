@@ -910,22 +910,21 @@ void ctn::CtnApiInternals::parseRetrievePermissionRights(RetrievePermissionRight
 			json_spirit::mObject &data = retObj["data"].get_obj();
 
 			/* ############### SYSTEM LEVEL PERMISSION RIGHTS ###############*/
-
 			user_return_data.system = data["system"].get_str();
 			
-			/* ############### CATENIS NODE PERMISSION RIGHTS ###############*/
-
+			/* ############### CATENIS NODE PERMISSION RIGHTS ############### */
 			if (data.find("catenisNode") != data.end()) {
 				json_spirit::mObject &ctnNodeObj= data["catenisNode"].get_obj();
 
 				std::list<std::string> allowed;
 				std::list<std::string> denied;
+				std::string ctnNodeId;
 
 				if (ctnNodeObj.find("allow") != ctnNodeObj.end()) {
 					json_spirit::mArray &ctnNodeRights = ctnNodeObj["allow"].get_array();
 
 					for (json_spirit::mValue &entry : ctnNodeRights) {
-						std::string ctnNodeId = entry.get_str();
+						ctnNodeId = std::to_string(entry.get_int()); //Conversion required.  Unlike POCO, BOOST Response is an int instead of string
 						allowed.push_back(ctnNodeId);
 					}
 				}
@@ -934,7 +933,7 @@ void ctn::CtnApiInternals::parseRetrievePermissionRights(RetrievePermissionRight
 					json_spirit::mArray &ctnNodeRights = ctnNodeObj["deny"].get_array();
 
 					for (json_spirit::mValue &entry : ctnNodeRights) {
-						std::string ctnNodeId = entry.get_str();
+						ctnNodeId = std::to_string(entry.get_int()); //Conversion required.  Unlike POCO, BOOST Response is an int instead of string
 						denied.push_back(ctnNodeId);
 					}
 				}
@@ -946,9 +945,8 @@ void ctn::CtnApiInternals::parseRetrievePermissionRights(RetrievePermissionRight
 			else {
 				user_return_data.catenisNode = nullptr;
 			}
-
+			
 			/* ############### CLIENT LEVEL PERMISSION RIGHTS ###############*/
-
 			if (data.find("client") != data.end()) {
 				json_spirit::mObject &clientObj = data["client"].get_obj();
 
@@ -982,7 +980,6 @@ void ctn::CtnApiInternals::parseRetrievePermissionRights(RetrievePermissionRight
 
 
 			/* ############### DEVICE LEVEL PERMISSION RIGHTS ###############*/
-			
 			if (data.find("device") != data.end()) {
 				json_spirit::mObject &deviceObj = data["device"].get_obj();
 
@@ -1048,7 +1045,6 @@ void ctn::CtnApiInternals::parseRetrievePermissionRights(RetrievePermissionRight
 		Poco::JSON::Object::Ptr data = retObj->getObject("data");
 
 		/* ############### SYSTEM LEVEL PERMISSION RIGHTS ################*/
-
 		user_return_data.system = data->getValue<std::string>("system");
 
 		/* ############### CATENIS NODE PERMISSION RIGHTS ////###############*/
@@ -1136,7 +1132,6 @@ void ctn::CtnApiInternals::parseRetrievePermissionRights(RetrievePermissionRight
 					std::shared_ptr<DeviceInfo> deviceRightsObj(new DeviceInfo(deviceId, name, prodUniqueId));
 					allowed.push_back(deviceRightsObj);
 				}
-
 			}
 			
 			if (deviceObj->has("deny")) {
@@ -1198,23 +1193,20 @@ void ctn::CtnApiInternals::parseSetPermissionRights(SetPermissionRightsResult &u
 
 		if (status == "success") {
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
-			json_spirit::mObject &data = retObj["data"].get_obj();
-
-			std::cout << "THIS IS FOR TESTING\n\n"+json_data << std::endl; // ############ TESTING
-
+			json_spirit::mObject &data = retObj["data"].get_obj();			
+			user_return_data.success = data["success"].get_bool();
 
 #elif defined(COM_SUPPORT_LIB_POCO)
 			Poco::JSON::Object::Ptr data = retObj->getObject("data");
-
-			user_return_data.success = data->getValue<std::string>("success");
+			user_return_data.success = data->getValue<bool>("success");
 #endif
 		}
 		else {
-			throw CatenisClientError("Unexpected returned data from List Permission Events API method");
+			throw CatenisClientError("Unexpected returned data from Set Permission Rights API method");
 		}
 	}
 	catch (...) {
-		throw CatenisClientError("Unexpected returned data from List Permission Events API method");
+		throw CatenisClientError("Unexpected returned data from Set Permission Rights API method");
 	}
 }
 

@@ -379,7 +379,7 @@ typedef std::map<std::string, std::string> SetPermissionRightsDictionary;
 */
 struct SetPermissionRightsResult
 {
-	std::string success;
+	bool success;
 };
 
 // Dictionary holding notification event description by notification event name
