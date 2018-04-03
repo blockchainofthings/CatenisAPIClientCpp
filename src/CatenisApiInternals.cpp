@@ -1040,7 +1040,6 @@ void ctn::CtnApiInternals::parseRetrievePermissionRights(RetrievePermissionRight
 					user_return_data.device= nullptr;
 			}
 			
-			
 #elif defined(COM_SUPPORT_LIB_POCO)
 		Poco::JSON::Object::Ptr data = retObj->getObject("data");
 
