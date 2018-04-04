@@ -14,8 +14,8 @@ namespace ctn
 {
 
 struct ApiErrorResponse {
-	std::string status;
-	std::string message;
+    std::string status;
+    std::string message;
 };
 
 /*
@@ -33,7 +33,7 @@ public:
     virtual std::string getErrorDescription() = 0;
 
 protected:
-	std::string errorMessage; 
+    std::string errorMessage;
 };
 
 /*
@@ -48,24 +48,24 @@ protected:
 class CatenisAPIError : public CatenisAPIException
 {
 public:
-	CatenisAPIError(std::string error_message, int http_status_code, ApiErrorResponse &error_response)
-			: CatenisAPIException(error_message), httpStatusCode(http_status_code), jsonErrorMessage(error_response.message) {}
+    CatenisAPIError(std::string error_message, int http_status_code, ApiErrorResponse &error_response)
+            : CatenisAPIException(error_message), httpStatusCode(http_status_code), jsonErrorMessage(error_response.message) {}
     ~CatenisAPIError() override = default;
 
     int getHttpStatusCode() { return(httpStatusCode); }
-	std::string getErrorMessage() override {
-		return jsonErrorMessage.empty() ? errorMessage : jsonErrorMessage;
-	}
-	std::string getErrorDescription() override {
-		std::ostringstream oss;
+    std::string getErrorMessage() override {
+        return jsonErrorMessage.empty() ? errorMessage : jsonErrorMessage;
+    }
+    std::string getErrorDescription() override {
+        std::ostringstream oss;
 
-		oss << "API error: [" << httpStatusCode << "] - " << getErrorMessage();
+        oss << "API error: [" << httpStatusCode << "] - " << getErrorMessage();
 
-		return oss.str();
-	}
+        return oss.str();
+    }
 
 private:
-	int httpStatusCode;
+    int httpStatusCode;
     std::string jsonErrorMessage;
 };
 

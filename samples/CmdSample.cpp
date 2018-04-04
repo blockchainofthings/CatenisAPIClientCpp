@@ -310,197 +310,164 @@ int main(int argc, char* argv[])
                 std::cerr << "Unknown error encountered: call to client.listMessage." << std::endl;
             }
         }
-		else if (method == "listPermissionEvents")
-		{
-			try
-			{
-				ListPermissionEventsResult data;
-				client.listPermissionEvents(data);
+        else if (method == "listPermissionEvents")
+        {
+            try
+            {
+                ListPermissionEventsResult data;
+                client.listPermissionEvents(data);
 
                 for (auto it = data.permissionEvents.begin(); it != data.permissionEvents.end(); it++)
                 {
                     cout << "Permission event (" << it->first << "): " << it->second << std::endl;
                 }
-			}
-			catch (CatenisAPIException &errObject)
-			{
-				std::cerr << errObject.getErrorDescription() << std::endl;
-			}
-			catch (...)
-			{
-				std::cerr << "Unknown error encountered: call to client.listPermissionEvents." << std::endl;
-			}
-		}
-		else if (method == "retrievePermissionRights")
-		{
-			string eventName;
-			isCmdLine >> eventName;
+            }
+            catch (CatenisAPIException &errObject)
+            {
+                std::cerr << errObject.getErrorDescription() << std::endl;
+            }
+            catch (...)
+            {
+                std::cerr << "Unknown error encountered: call to client.listPermissionEvents." << std::endl;
+            }
+        }
+        else if (method == "retrievePermissionRights")
+        {
+            string eventName;
+            isCmdLine >> eventName;
 
-			try
-			{
-				RetrievePermissionRightsResult data;
-				client.retrievePermissionRights(data, eventName);
+            try
+            {
+                RetrievePermissionRightsResult data;
+                client.retrievePermissionRights(data, eventName);
 
-				/* SYSTEM LEVEL PERMISSION RIGHTS */
-				cout << "System right: " << data.system << std::endl;
+                /* SYSTEM LEVEL PERMISSION RIGHTS */
+                cout << "System right: " << data.system << std::endl;
 
-				/* CATENIS NODE PERMISSION RIGHTS */
-				if (data.catenisNode != nullptr)
-				{
-					cout << "\nCatenis node rights:" << std::endl;
+                /* CATENIS NODE PERMISSION RIGHTS */
+                if (data.catenisNode != nullptr)
+                {
+                    cout << "\nCatenis node rights:" << std::endl;
 
-					std::list<string> allowed = data.catenisNode->allowed;
+                    std::list<string> allowed = data.catenisNode->allowed;
 
-					if (allowed.size() > 0) {
-						cout << "  Allowed Catenis nodes:" << endl;
-						for (auto i = allowed.begin(); i != allowed.end(); ++i)
-						{
-							cout << "    " << *i << endl;
-						}
-					}
+                    if (allowed.size() > 0) {
+                        cout << "  Allowed Catenis nodes:" << endl;
+                        for (auto i = allowed.begin(); i != allowed.end(); ++i)
+                        {
+                            cout << "    " << *i << endl;
+                        }
+                    }
 
-					std::list<string> denied = data.catenisNode->denied;
-					if (denied.size() > 0) {
-						cout << "  Denied Catenis nodes:" << endl;
-						for (auto i = denied.begin(); i != denied.end(); ++i)
-						{
-							cout << "    " << *i << endl;
-						}
-					}
-				}
+                    std::list<string> denied = data.catenisNode->denied;
+                    if (denied.size() > 0) {
+                        cout << "  Denied Catenis nodes:" << endl;
+                        for (auto i = denied.begin(); i != denied.end(); ++i)
+                        {
+                            cout << "    " << *i << endl;
+                        }
+                    }
+                }
 
-				/* CLIENT NODE PERMISSION RIGHTS */
-				if (data.client != nullptr)
-				{
-					cout << "\nClient rights:" << std::endl;
+                /* CLIENT NODE PERMISSION RIGHTS */
+                if (data.client != nullptr)
+                {
+                    cout << "\nClient rights:" << std::endl;
 
-					std::list<string> allowed = data.client->allowed;
+                    std::list<string> allowed = data.client->allowed;
 
-					if (allowed.size() > 0) {
-						cout << "  Allowed clients:" << endl;
-						for (auto i = allowed.begin(); i != allowed.end(); ++i)
-						{
-							cout << "    " << *i << endl;
-						}
-					}
+                    if (allowed.size() > 0) {
+                        cout << "  Allowed clients:" << endl;
+                        for (auto i = allowed.begin(); i != allowed.end(); ++i)
+                        {
+                            cout << "    " << *i << endl;
+                        }
+                    }
 
-					std::list<string> denied = data.client->denied;
-					if (denied.size() > 0) {
-						cout << "  Denied clients:" << endl;
-						for (auto i = denied.begin(); i != denied.end(); ++i)
-						{
-							cout << "    " << *i << endl;
-						}
-					}
-				}
+                    std::list<string> denied = data.client->denied;
+                    if (denied.size() > 0) {
+                        cout << "  Denied clients:" << endl;
+                        for (auto i = denied.begin(); i != denied.end(); ++i)
+                        {
+                            cout << "    " << *i << endl;
+                        }
+                    }
+                }
 
-				/* DEVICE LEVEL PERMISSION RIGHTS */
-				if (data.device != nullptr)
-				{
-					cout << "\nDevice rights:" << std::endl;
+                /* DEVICE LEVEL PERMISSION RIGHTS */
+                if (data.device != nullptr)
+                {
+                    cout << "\nDevice rights:" << std::endl;
 
-					std::list<std::shared_ptr<DeviceInfo>> allowed = data.device->allowed;
-					if (allowed.size() > 0) {
-						cout << "  Allowed devices:" << endl;
-						int devCount = 0;
-						for (auto it = allowed.begin(); it != allowed.end(); it++)
-						{
+                    std::list<std::shared_ptr<DeviceInfo>> allowed = data.device->allowed;
+                    if (allowed.size() > 0) {
+                        cout << "  Allowed devices:" << endl;
+                        int devCount = 0;
+                        for (auto it = allowed.begin(); it != allowed.end(); it++)
+                        {
                             cout << "    Device #" << ++devCount << ":" << endl;
                             DeviceInfo okDev = *(*it);
                             cout << "      deviceId: " << okDev.deviceId << endl;
-							if (!okDev.name.empty())
-								cout << "      name: " << okDev.name << endl;
-							if (!okDev.prodUniqueId.empty())
-								cout << "      prodUniqueId: " << okDev.prodUniqueId << endl;
-						}
-					}
+                            if (!okDev.name.empty())
+                                cout << "      name: " << okDev.name << endl;
+                            if (!okDev.prodUniqueId.empty())
+                                cout << "      prodUniqueId: " << okDev.prodUniqueId << endl;
+                        }
+                    }
 
-					std::list<std::shared_ptr<DeviceInfo>> denied = data.device->denied;
-					if (denied.size() > 0) {
+                    std::list<std::shared_ptr<DeviceInfo>> denied = data.device->denied;
+                    if (denied.size() > 0) {
                         cout << "  Denied devices:" << endl;
-						int devCount = 0;
-						for (auto it = denied.begin(); it != denied.end(); it++)
-						{
+                        int devCount = 0;
+                        for (auto it = denied.begin(); it != denied.end(); it++)
+                        {
                             cout << "    Device #" << ++devCount << ":" << endl;
-							DeviceInfo ngDev = *(*it);
+                            DeviceInfo ngDev = *(*it);
                             cout << "      deviceId: " << ngDev.deviceId << endl;
-							if (!ngDev.name.empty())
+                            if (!ngDev.name.empty())
                                 cout << "      name: " << ngDev.name << endl;
-							if (!ngDev.prodUniqueId.empty())
+                            if (!ngDev.prodUniqueId.empty())
                                 cout << "      prodUniqueId: " << ngDev.prodUniqueId << endl;
-						}
-					}
-				}
-			}
-			catch (CatenisAPIException &errObject)
-			{
-				std::cerr << errObject.getErrorDescription() << std::endl;
-			}
-			catch (...)
-			{
-				std::cerr << "Unknown error encountered: call to client.retrivePermissionEvents." << std::endl;
-			}
-		}
-		else if (method == "listNotificationEvents")
-		{
-			try
-			{
-				ListNotificationEventsResult data;
-				client.listNotificationEvents(data);
+                        }
+                    }
+                }
+            }
+            catch (CatenisAPIException &errObject)
+            {
+                std::cerr << errObject.getErrorDescription() << std::endl;
+            }
+            catch (...)
+            {
+                std::cerr << "Unknown error encountered: call to client.retrivePermissionEvents." << std::endl;
+            }
+        }
+        else if (method == "listNotificationEvents")
+        {
+            try
+            {
+                ListNotificationEventsResult data;
+                client.listNotificationEvents(data);
 
-				for (auto it = data.notificationEvents.begin(); it != data.notificationEvents.end(); it++)
-				{
-					cout << "Notification event (" << it->first << "): " << it->second << std::endl;
-				}
-			}
-			catch (CatenisAPIException &errObject)
-			{
-				std::cerr << errObject.getErrorDescription() << std::endl;
-			}
-			catch (...)
-			{
-				std::cerr << "Unknown error encountered: call to client.listNotificationEvents." << std::endl;
-			}
-		}
-		else if (method == "checkEffectivePermissionRight")
-		{
-			string eventName, deviceId;
+                for (auto it = data.notificationEvents.begin(); it != data.notificationEvents.end(); it++)
+                {
+                    cout << "Notification event (" << it->first << "): " << it->second << std::endl;
+                }
+            }
+            catch (CatenisAPIException &errObject)
+            {
+                std::cerr << errObject.getErrorDescription() << std::endl;
+            }
+            catch (...)
+            {
+                std::cerr << "Unknown error encountered: call to client.listNotificationEvents." << std::endl;
+            }
+        }
+        else if (method == "checkEffectivePermissionRight")
+        {
+            string eventName, deviceId;
             bool isProdUniqueId = false;
 
-			isCmdLine >> eventName >> deviceId;
-
-			if (!isCmdLine.eof()) {
-			    string strIsProdUniqueId;
-			    isCmdLine >> strIsProdUniqueId;
-			    isProdUniqueId = strIsProdUniqueId == "true";
-			}
-
-			try
-			{
-				CheckEffectivePermissionRightResult data;
-				client.checkEffectivePermissionRight(data,eventName, Device(deviceId, isProdUniqueId));
-
-				for (auto it = data.effectivePermissionRight.begin(); it != data.effectivePermissionRight.end(); it++)
-				{
-					cout << "Permission right for device (\"" << it->first << "\"): " << it->second << std::endl;
-				}
-				
-			}
-			catch (CatenisAPIException &errObject)
-			{
-				std::cerr << errObject.getErrorDescription() << std::endl;
-			}
-			catch (...)
-			{
-				std::cerr << "Unknown error encountered: call to client.checkEffectivePermissionRight." << std::endl;
-			}
-		}
-		else if (method == "retrieveDeviceIdInfo")
-		{
-			string deviceId;
-			bool isProdUniqueId = false;
-
-			isCmdLine >> deviceId;
+            isCmdLine >> eventName >> deviceId;
 
             if (!isCmdLine.eof()) {
                 string strIsProdUniqueId;
@@ -508,71 +475,104 @@ int main(int argc, char* argv[])
                 isProdUniqueId = strIsProdUniqueId == "true";
             }
 
-			try
-			{
-				DeviceIdInfoResult data;
-				client.retrieveDeviceIdInfo(data, Device(deviceId, isProdUniqueId));
+            try
+            {
+                CheckEffectivePermissionRightResult data;
+                client.checkEffectivePermissionRight(data,eventName, Device(deviceId, isProdUniqueId));
 
-				// Print out CatenisNodeInfo
-				if (data.catenisNode != nullptr)
-				{
-					cout << "Catenis node:" << std::endl;
-					cout << "  index: " << data.catenisNode->index << endl;
+                for (auto it = data.effectivePermissionRight.begin(); it != data.effectivePermissionRight.end(); it++)
+                {
+                    cout << "Permission right for device (\"" << it->first << "\"): " << it->second << std::endl;
+                }
 
-					if (!data.catenisNode->name.empty())
-						cout << "  name: " << data.catenisNode->name << endl;
+            }
+            catch (CatenisAPIException &errObject)
+            {
+                std::cerr << errObject.getErrorDescription() << std::endl;
+            }
+            catch (...)
+            {
+                std::cerr << "Unknown error encountered: call to client.checkEffectivePermissionRight." << std::endl;
+            }
+        }
+        else if (method == "retrieveDeviceIdInfo")
+        {
+            string deviceId;
+            bool isProdUniqueId = false;
 
-					if (!data.catenisNode->description.empty())
-						cout << "  description: " << data.catenisNode->description << endl;
-				}
+            isCmdLine >> deviceId;
 
-				// Print out ClientInfo
-				if (data.client != nullptr)
-				{
-					cout << "\nClient:" << std::endl;
-					cout << "  clientId: " << data.client->clientId << endl;
+            if (!isCmdLine.eof()) {
+                string strIsProdUniqueId;
+                isCmdLine >> strIsProdUniqueId;
+                isProdUniqueId = strIsProdUniqueId == "true";
+            }
 
-					if (!data.device->name.empty())
-						cout << "  name: " << data.client->name << endl;
-				}
+            try
+            {
+                DeviceIdInfoResult data;
+                client.retrieveDeviceIdInfo(data, Device(deviceId, isProdUniqueId));
 
-				// Print out DeviceInfo
-				if (data.device != nullptr)
-				{
-					cout << "\nDevice:" << endl;
+                // Print out CatenisNodeInfo
+                if (data.catenisNode != nullptr)
+                {
+                    cout << "Catenis node:" << std::endl;
+                    cout << "  index: " << data.catenisNode->index << endl;
+
+                    if (!data.catenisNode->name.empty())
+                        cout << "  name: " << data.catenisNode->name << endl;
+
+                    if (!data.catenisNode->description.empty())
+                        cout << "  description: " << data.catenisNode->description << endl;
+                }
+
+                // Print out ClientInfo
+                if (data.client != nullptr)
+                {
+                    cout << "\nClient:" << std::endl;
+                    cout << "  clientId: " << data.client->clientId << endl;
+
+                    if (!data.device->name.empty())
+                        cout << "  name: " << data.client->name << endl;
+                }
+
+                // Print out DeviceInfo
+                if (data.device != nullptr)
+                {
+                    cout << "\nDevice:" << endl;
                     cout << "  deviceId: " << data.device->deviceId << endl;
 
                     if (!data.device->name.empty())
-						cout << "  name: " << data.device->name << endl;
+                        cout << "  name: " << data.device->name << endl;
 
-					if (!data.device->prodUniqueId.empty())
-						cout << "  prodUniqueId: " << data.device->prodUniqueId << endl;
-				}
-			}
-			catch (CatenisAPIException &errObject)
-			{
-				std::cerr << errObject.getErrorDescription() << std::endl;
-			}
-			catch (...)
-			{
-				std::cerr << "Unknown error encountered: call to client.retrieveDeviceIdInfo." << std::endl;
-			}
-		}
-		else if (method == "setPermissionRights")
-		{
-			string eventName;
-			isCmdLine >> eventName;
+                    if (!data.device->prodUniqueId.empty())
+                        cout << "  prodUniqueId: " << data.device->prodUniqueId << endl;
+                }
+            }
+            catch (CatenisAPIException &errObject)
+            {
+                std::cerr << errObject.getErrorDescription() << std::endl;
+            }
+            catch (...)
+            {
+                std::cerr << "Unknown error encountered: call to client.retrieveDeviceIdInfo." << std::endl;
+            }
+        }
+        else if (method == "setPermissionRights")
+        {
+            string eventName;
+            isCmdLine >> eventName;
 
-			/*// Empty input stream
-			string null;
-			std::getline(cin, null);*/
+            /*// Empty input stream
+            string null;
+            std::getline(cin, null);*/
 
-			// ------ SYSTEM LEVEL
+            // ------ SYSTEM LEVEL
             cout << "Enter system right (allow/deny): ";
             string systemRight;
             std::getline(cin, systemRight);
 
-			// ------ CATENIS NODE LEVEL
+            // ------ CATENIS NODE LEVEL
             cout << "Enter Catenis nodes (indices) to allow: ";
             string strAllowedCtnNodes;
             std::getline(cin, strAllowedCtnNodes);
@@ -618,7 +618,7 @@ int main(int argc, char* argv[])
                 }
             }
 
-			// ------ CLIENT LEVEL
+            // ------ CLIENT LEVEL
             cout << "Enter clients (IDs) to allow: ";
             string strAllowedClients;
             std::getline(cin, strAllowedClients);
@@ -736,32 +736,32 @@ int main(int argc, char* argv[])
 
             cout << endl;
 
-			/*
-			* Store Permission Right Containers into appropriate structure
-			*/
-			SetRightsCtnNode ctnNodeRights(allowedCtnNodes, deniedCtnNodes, noneCtnNodes);
-			SetRightsClient clientRights(allowedClients, deniedClients, noneClients);
-			SetRightsDevice deviceRights(allowedDevices, deniedDevices, noneDevices);
+            /*
+            * Store Permission Right Containers into appropriate structure
+            */
+            SetRightsCtnNode ctnNodeRights(allowedCtnNodes, deniedCtnNodes, noneCtnNodes);
+            SetRightsClient clientRights(allowedClients, deniedClients, noneClients);
+            SetRightsDevice deviceRights(allowedDevices, deniedDevices, noneDevices);
 
-			/*
-			* Execute the Set Permission Right Command / and output the response
-			*/
-			try
-			{
-				SetPermissionRightsResult data;
-				client.setPermissionRights(data, eventName, systemRight, &ctnNodeRights, &clientRights, &deviceRights);
-				cout << "Permission rights successfully set" << std::endl;
-			}
-			catch (CatenisAPIException &errObject)
-			{
-				std::cerr << errObject.getErrorDescription() << std::endl;
-			}
-			catch (...)
-			{
-				std::cerr << "Unknown error encountered: call to client.setPermissionRights." << std::endl;
-			}
-		}
-		else if (method == "help") {
+            /*
+            * Execute the Set Permission Right Command / and output the response
+            */
+            try
+            {
+                SetPermissionRightsResult data;
+                client.setPermissionRights(data, eventName, systemRight, &ctnNodeRights, &clientRights, &deviceRights);
+                cout << "Permission rights successfully set" << std::endl;
+            }
+            catch (CatenisAPIException &errObject)
+            {
+                std::cerr << errObject.getErrorDescription() << std::endl;
+            }
+            catch (...)
+            {
+                std::cerr << "Unknown error encountered: call to client.setPermissionRights." << std::endl;
+            }
+        }
+        else if (method == "help") {
             showUsage();
         }
         else if (method == "exit") {

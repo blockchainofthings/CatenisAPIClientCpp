@@ -115,27 +115,27 @@ function(merge_static_libs output_library)
             if(${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake.check_cache IS_NEWER_THAN ${objlistcmake})
 
                 file(WRITE ${objlistcmake} "
-				# delete previous object files
-				message(STATUS \"Removing previous object files from ${lib}\")
-				EXECUTE_PROCESS(COMMAND ls .
-					WORKING_DIRECTORY ${objdir}
-					COMMAND xargs -I {} rm {}
-					WORKING_DIRECTORY ${objdir})
-				# Extract object files from the library
-				message(STATUS \"Extracting object files from ${lib}\")
-				EXECUTE_PROCESS(COMMAND ${CMAKE_AR} -x ${lib}
-					WORKING_DIRECTORY ${objdir})
-				# Prefixing object files to avoid conflicts
-				message(STATUS \"Prefixing object files to avoid conflicts\")
-				EXECUTE_PROCESS(COMMAND ls .
-					WORKING_DIRECTORY ${objdir}
-					COMMAND xargs -I {} mv {} ${libname}_{}
-					WORKING_DIRECTORY ${objdir})
-				# save the list of object files
-				EXECUTE_PROCESS(COMMAND ls .
-					OUTPUT_FILE ${objlistfile}
-					WORKING_DIRECTORY ${objdir})
-			")
+                # delete previous object files
+                message(STATUS \"Removing previous object files from ${lib}\")
+                EXECUTE_PROCESS(COMMAND ls .
+                    WORKING_DIRECTORY ${objdir}
+                    COMMAND xargs -I {} rm {}
+                    WORKING_DIRECTORY ${objdir})
+                # Extract object files from the library
+                message(STATUS \"Extracting object files from ${lib}\")
+                EXECUTE_PROCESS(COMMAND ${CMAKE_AR} -x ${lib}
+                    WORKING_DIRECTORY ${objdir})
+                # Prefixing object files to avoid conflicts
+                message(STATUS \"Prefixing object files to avoid conflicts\")
+                EXECUTE_PROCESS(COMMAND ls .
+                    WORKING_DIRECTORY ${objdir}
+                    COMMAND xargs -I {} mv {} ${libname}_{}
+                    WORKING_DIRECTORY ${objdir})
+                # save the list of object files
+                EXECUTE_PROCESS(COMMAND ls .
+                    OUTPUT_FILE ${objlistfile}
+                    WORKING_DIRECTORY ${objdir})
+            ")
 
                 file(MAKE_DIRECTORY ${objdir})
 
