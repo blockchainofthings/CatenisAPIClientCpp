@@ -9,6 +9,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <sstream>
 
 #include <CatenisApiException.h>
 #include <CatenisApiClient.h>
@@ -20,52 +21,71 @@ using std::string;
 
 using namespace ctn;
 
+void showUsage() {
+    cout << endl << "Usage:" << endl;
+    cout << "    msgOpts" << endl;
+    cout << "    logMessage" << endl;
+    cout << "    sendMessage <device_id> [<isProdUniqueId>]" << endl;
+    cout << "    readMessage <message_id>" << endl;
+    cout << "    retrieveMsgContainer <message_id>" << endl;
+    cout << "    listMessages" << endl;
+    cout << "    listPermissionEvents" << endl;
+    cout << "    retrievePermissionRights <event_name>" << endl;
+    cout << "    setPermissionRights <event_name>" << endl;
+    cout << "    listNotificationEvents" << endl;
+    cout << "    checkEffectivePermissionRight <event_name> <deviceId> [<isProdUniqueId>]" << endl;
+    cout << "    retrieveDeviceIdInfo <deviceId> [<isProdUniqueId>]" << endl;
+    cout << "    help" << endl;
+    cout << "    exit" << endl;
+}
+
+void showMsgOptsUsage() {
+    cout << endl << "Message options:" << endl;
+    cout << "     encoding (utf8|base64|hex)" << endl;
+    cout << "     encrypt (true|false)" << endl;
+    cout << "     storage (auto|embedded|external)" << endl;
+    cout << "     readConfirmation (true|false)" << endl;
+    cout << "     show" << endl;
+    cout << "     help" << endl;
+    cout << "     exit" << endl;
+}
+
+void showMsgOptions(MessageOptions &msgOpts) {
+    cout << "Encoding: " << msgOpts.encoding << endl;
+    cout << "Encrypt: " << (msgOpts.encrypt ? "true" : "false") << endl;
+    cout << "Storage: " << msgOpts.storage << endl;
+    cout << "Read confirmation: " << (msgOpts.readConfirmation ? "true" : "false") << endl;
+}
+
 int main(int argc, char* argv[])
 {
     
     if (argc != 3)
     {
-        std::cout << "Usage: CmdSample <device_id> <api_access_secret> \n";
+        cout << "Usage: CmdSample <device_id> <api_access_secret> \n";
         return 1;
     }
     
     ctn::CtnApiClient client(argv[1], argv[2], "catenis.io", "", "beta");
 
-    cout << endl;
-    cout << "Usage:" << endl;
-    cout << "    msgOpts" << endl;
-    cout << "    log" << endl;
-    cout << "    send <device_id>" << endl;
-    cout << "    read <message_id>" << endl;
-    cout << "    retrieve <message_id>" << endl;
-    cout << "    list" << endl;
-	cout << "    listPermissionEvents" << endl;
-	cout << "    retrievePermissionRights <event_name>" << endl;
-	cout << "    setPermissionRights <event_name>" << endl;
-	cout << "    listNotificationEvents" << endl;
-	cout << "    checkEffectivePermissionRight <event_name> <deviceId> [<isProdUniqueId>]" << endl;
-	cout << "    retrieveDeviceIdInfo <deviceId>" << endl;
-    cout << "    exit" << endl;
+    showUsage();
 
     bool exit = false;
     MessageOptions msgOpts;
 
     do
     {
-        string method, device_id, message_id, message;
+        string method, message_id, message;
 
         cout << endl << "> ";
-        cin >> method;
+        string cmdLine;
+        std::getline(cin, cmdLine);
+        std::istringstream isCmdLine(cmdLine);
+
+        isCmdLine >> method;
 
         if (method == "msgOpts") {
-            cin.ignore();
-
-            cout << "Message options:" << endl;
-            cout << "     encoding <msg_encoding>" << endl;
-            cout << "     encrypt <bool>" << endl;
-            cout << "     storage <msg_storage>" << endl;
-            cout << "     readConfirmation <bool>" << endl;
-            cout << "     exit" << endl;
+            showMsgOptsUsage();
 
             bool optExit = false;
 
@@ -73,23 +93,23 @@ int main(int argc, char* argv[])
                 string opt;
 
                 cout << endl << "msgOpts> ";
-                cin >> opt;
+                string msgOptsCmdLine;
+                std::getline(cin, msgOptsCmdLine);
+                std::istringstream isMsgOptsCmdLine(msgOptsCmdLine);
+                isMsgOptsCmdLine >> opt;
 
                 if (opt == "encoding") {
-                    cin >> msgOpts.encoding;
-                    cin.ignore();
+                    isMsgOptsCmdLine >> msgOpts.encoding;
                 }
                 else  if (opt == "encrypt") {
                     string boolVal;
 
-                    cin >> boolVal;
-                    cin.ignore();
+                    isMsgOptsCmdLine >> boolVal;
 
-                    msgOpts.encrypt = boolVal == "yes";
+                    msgOpts.encrypt = boolVal == "true";
                 }
                 else  if (opt == "storage") {
-                    cin >> msgOpts.storage;
-                    cin.ignore();
+                    isMsgOptsCmdLine >> msgOpts.storage;
                 }
                 else if (opt == "exit") {
                     optExit = true;
@@ -97,13 +117,18 @@ int main(int argc, char* argv[])
                 else  if (opt == "readConfirmation") {
                     string boolVal;
 
-                    cin >> boolVal;
-                    cin.ignore();
+                    isMsgOptsCmdLine >> boolVal;
 
-                    msgOpts.readConfirmation = boolVal == "yes";
+                    msgOpts.readConfirmation = boolVal == "true";
+                }
+                else  if (opt == "show") {
+                    showMsgOptions(msgOpts);
+                }
+                else  if (opt == "help") {
+                    showMsgOptsUsage();
                 }
                 else {
-                    cout << "Invalid message option" << endl;
+                    cout << "Invalid command" << endl;
                 }
 
                 if (optExit) {
@@ -112,9 +137,8 @@ int main(int argc, char* argv[])
             }
             while (!optExit);
         }
-        else if (method == "log")
+        else if (method == "logMessage")
         {
-            cin.ignore();
             cout << "enter message: ";
             std::getline(cin, message);
 
@@ -122,7 +146,7 @@ int main(int argc, char* argv[])
             {
                 LogMessageResult data;
                 client.logMessage(data, message, msgOpts);
-                std::cout << "Returned message ID: " << data.messageId << std::endl;
+                cout << "Returned message ID: " << data.messageId << std::endl;
             }
             catch(CatenisAPIException &errObject)
             {
@@ -133,18 +157,27 @@ int main(int argc, char* argv[])
                 std::cerr << "Unknown error encountered: call to client.logMessage." << std::endl;
             }
         }
-        else if (method == "send")
+        else if (method == "sendMessage")
         {
-            cin >> device_id;
-            cin.ignore();
+            string deviceId;
+            bool isProdUniqueId = false;
+
+            isCmdLine >> deviceId;
+
+            if (!isCmdLine.eof()) {
+                string strIsProdUniqueId;
+                isCmdLine >> strIsProdUniqueId;
+                isProdUniqueId = strIsProdUniqueId == "true";
+            }
+
             cout << "enter message: ";
             std::getline(cin, message);
 
             try
             {
                 SendMessageResult data;
-                client.sendMessage(data, ctn::Device(device_id), message, msgOpts);
-                std::cout << "Returned message ID: " << data.messageId << std::endl;
+                client.sendMessage(data, ctn::Device(deviceId, isProdUniqueId), message, msgOpts);
+                cout << "Returned message ID: " << data.messageId << std::endl;
             }
             catch(CatenisAPIException &errObject)
             {
@@ -155,28 +188,27 @@ int main(int argc, char* argv[])
                 std::cerr << "Unknown error encountered: call to client.sendMessage." << std::endl;
             }
         }
-        else if (method == "read")
+        else if (method == "readMessage")
         {
-            cin >> message_id;
-            cin.ignore();
+            isCmdLine >> message_id;
 
             try
             {
                 ReadMessageResult data;
                 client.readMessage(data, message_id);
-                std::cout << "Returned message info: " << std::endl;
-                std::cout << "  Action: " << data.action << std::endl;
-                std::cout << "  Message: " << data.message << std::endl;
+                cout << "Returned message info: " << std::endl;
+                cout << "  Action: " << data.action << std::endl;
+                cout << "  Message: " << data.message << std::endl;
 
                 if (data.from != nullptr) {
-                    std::cout << "  From: " << std::endl;
-                    std::cout << "    Device ID: " << data.from->deviceId << std::endl;
+                    cout << "  From: " << std::endl;
+                    cout << "    Device ID: " << data.from->deviceId << std::endl;
 
                     if (!data.from->name.empty())
-                        std::cout << "    Name: " << data.from->name << std::endl;
+                        cout << "    Name: " << data.from->name << std::endl;
 
                     if (!data.from->prodUniqueId.empty())
-                        std::cout << "    Product unique ID: " << data.from->prodUniqueId << std::endl;
+                        cout << "    Product unique ID: " << data.from->prodUniqueId << std::endl;
                 }
             }
             catch(CatenisAPIException &errObject)
@@ -188,24 +220,22 @@ int main(int argc, char* argv[])
                 std::cerr << "Unknown error encountered: call to client.readMessage." << std::endl;
             }
         }
-        else if (method == "retrieve")
+        else if (method == "retrieveMsgContainer")
         {
-            cin >> message_id;
-            cin.ignore();
+            isCmdLine >> message_id;
 
             try
             {
                 RetrieveMessageContainerResult data;
                 client.retrieveMessageContainer(data, message_id);
-                std::cout << "Returned message container info:" << endl;
-                std::cout << "  Blockchain txid: " << data.blockchain.txid << std::endl;
-                std::string val = data.blockchain.isConfirmed ? "true" : "false";
-                std::cout << "  Is confirmed: " << val << std::endl;
+                cout << "Returned message container info:" << endl;
+                cout << "  Blockchain txid: " << data.blockchain.txid << std::endl;
+                string val = data.blockchain.isConfirmed ? "true" : "false";
+                cout << "  Is confirmed: " << val << std::endl;
 
                 if (data.externalStorage != nullptr)
                 {
-                    std::map<std::string, std::string>::iterator it = data.externalStorage->begin();
-                    for (; it != data.externalStorage->end(); it++)
+                    for (auto it = data.externalStorage->begin(); it != data.externalStorage->end(); it++)
                     {
                         cout << "  External storage (" << it->first << ") reference: " << it->second << std::endl;
                     }
@@ -220,59 +250,56 @@ int main(int argc, char* argv[])
                 std::cerr << "Unknown error encountered: call to client.retrieveMessage." << std::endl;
             }
         }
-        else if (method == "list")
+        else if (method == "listMessages")
         {
-            cin.ignore();
-
             try
             {
                 ListMessagesResult data;
                 client.listMessages(data);
 
-                std::list<std::shared_ptr<MessageDescription>>::iterator it = data.messageList.begin();
-                for (; it != data.messageList.end(); it++)
+                for (auto it = data.messageList.begin(); it != data.messageList.end(); it++)
                 {
                     MessageDescription msgD = *(*it);
-                    std::cout << "--------------------------------Message";
-                    std::cout << "--------------------------------" << endl;
-                    std::cout << "MessageId\t\t\t: " << msgD.messageId << endl;
-                    std::cout << "Action\t\t\t\t: " << msgD.action << endl;
+                    cout << "--------------------------------Message";
+                    cout << "--------------------------------" << endl;
+                    cout << "MessageId\t\t\t: " << msgD.messageId << endl;
+                    cout << "Action\t\t\t\t: " << msgD.action << endl;
 
                     if (!msgD.direction.empty())
-                        std::cout << "Direction\t\t\t: " << msgD.direction << endl;
+                        cout << "Direction\t\t\t: " << msgD.direction << endl;
 
                     if (msgD.from != nullptr)
                     {
-                        std::cout << "FromDeviceId\t\t\t: " << msgD.from->deviceId << endl;
+                        cout << "FromDeviceId\t\t\t: " << msgD.from->deviceId << endl;
 
                         if (!msgD.from->name.empty())
-                            std::cout << "FromName\t\t\t: " << msgD.from->name << endl;
+                            cout << "FromName\t\t\t: " << msgD.from->name << endl;
 
                         if (!msgD.from->prodUniqueId.empty())
-                            std::cout << "FromProdUniqueId\t\t: " << msgD.from->prodUniqueId << endl;
+                            cout << "FromProdUniqueId\t\t: " << msgD.from->prodUniqueId << endl;
                     }
 
                     if (msgD.to != nullptr)
                     {
-                        std::cout << "ToDeviceId\t\t\t: " << msgD.to->deviceId << endl;
+                        cout << "ToDeviceId\t\t\t: " << msgD.to->deviceId << endl;
 
                         if (!msgD.to->name.empty())
-                            std::cout << "ToName\t\t\t\t: " << msgD.to->name << endl;
+                            cout << "ToName\t\t\t\t: " << msgD.to->name << endl;
 
                         if (!msgD.to->prodUniqueId.empty())
-                            std::cout << "ToProdUniqueId\t\t\t: " << msgD.to->prodUniqueId << endl;
+                            cout << "ToProdUniqueId\t\t\t: " << msgD.to->prodUniqueId << endl;
                     }
 
                     if (msgD.readConfirmationEnabled != nullptr)
-                        std::cout << "ReadConfirmationEnabled\t\t: " << *msgD.readConfirmationEnabled << endl;
+                        cout << "ReadConfirmationEnabled\t\t: " << *msgD.readConfirmationEnabled << endl;
 
                     if (msgD.read != nullptr)
-                        std::cout << "Read\t\t\t\t: " << *msgD.read << endl;
+                        cout << "Read\t\t\t\t: " << *msgD.read << endl;
 
-                    std::cout << "Date\t\t\t\t: " << msgD.date << endl;
+                    cout << "Date\t\t\t\t: " << msgD.date << endl;
                 }
-                std::cout << "MsgCount\t\t\t: " << data.msgCount << std::endl;
-                std::cout << "CountExceeded\t\t\t: " << data.countExceeded << std::endl;
+                cout << "MsgCount\t\t\t: " << data.msgCount << std::endl;
+                cout << "CountExceeded\t\t\t: " << data.countExceeded << std::endl;
             }
             catch(CatenisAPIException &errObject)
             {
@@ -285,16 +312,14 @@ int main(int argc, char* argv[])
         }
 		else if (method == "listPermissionEvents")
 		{
-			cin.ignore();
-
 			try
 			{
 				ListPermissionEventsResult data;
 				client.listPermissionEvents(data);
 
-                for (PermissionEventDictionary::iterator it = data.permissionEvents.begin(); it != data.permissionEvents.end(); it++)
+                for (auto it = data.permissionEvents.begin(); it != data.permissionEvents.end(); it++)
                 {
-                    cout << "  Permission event (" << it->first << "): " << it->second << std::endl;
+                    cout << "Permission event (" << it->first << "): " << it->second << std::endl;
                 }
 			}
 			catch (CatenisAPIException &errObject)
@@ -309,8 +334,7 @@ int main(int argc, char* argv[])
 		else if (method == "retrievePermissionRights")
 		{
 			string eventName;
-			cin >> eventName;
-			cin.ignore();
+			isCmdLine >> eventName;
 
 			try
 			{
@@ -318,29 +342,29 @@ int main(int argc, char* argv[])
 				client.retrievePermissionRights(data, eventName);
 
 				/* SYSTEM LEVEL PERMISSION RIGHTS */
-				std::cout << "\nSYSTEM:\t\t\t" << data.system << std::endl;
+				cout << "System right: " << data.system << std::endl;
 
 				/* CATENIS NODE PERMISSION RIGHTS */
 				if (data.catenisNode != nullptr)
 				{
-					std::list<std::string> allowed = data.client->allowed;
+					cout << "\nCatenis node rights:" << std::endl;
+
+					std::list<string> allowed = data.catenisNode->allowed;
 
 					if (allowed.size() > 0) {
-						std::cout << "" << std::endl;
-						std::cout << "CATENIS NODES Allowed: " << std::endl;
-						for (std::list<std::string>::const_iterator i = allowed.begin(); i != allowed.end(); ++i)
+						cout << "  Allowed Catenis nodes:" << endl;
+						for (auto i = allowed.begin(); i != allowed.end(); ++i)
 						{
-							std::cout << "\t\t\t" + *i << std::endl;
+							cout << "    " << *i << endl;
 						}
 					}
 
-					std::list<std::string> denied = data.client->denied;
+					std::list<string> denied = data.catenisNode->denied;
 					if (denied.size() > 0) {
-						std::cout << "" << std::endl;
-						std::cout << "CATENIS NODES Denied: " << std::endl;
-						for (std::list<std::string>::const_iterator i = denied.begin(); i != denied.end(); ++i)
+						cout << "  Denied Catenis nodes:" << endl;
+						for (auto i = denied.begin(); i != denied.end(); ++i)
 						{
-							std::cout << "\t\t\t" + *i << std::endl;
+							cout << "    " << *i << endl;
 						}
 					}
 				}
@@ -348,26 +372,24 @@ int main(int argc, char* argv[])
 				/* CLIENT NODE PERMISSION RIGHTS */
 				if (data.client != nullptr)
 				{
-					std::list<std::string> allowed = data.client->allowed;
+					cout << "\nClient rights:" << std::endl;
+
+					std::list<string> allowed = data.client->allowed;
 
 					if (allowed.size() > 0) {
-						std::cout << "" << std::endl;
-						std::cout << "CLIENTS Allowed: " << std::endl;
-						std::cout << "----------------------------------------------" << std::endl;
-						for (std::list<std::string>::const_iterator i = allowed.begin(); i != allowed.end(); ++i)
+						cout << "  Allowed clients:" << endl;
+						for (auto i = allowed.begin(); i != allowed.end(); ++i)
 						{
-							std::cout << "\t\t\t" + *i << std::endl;
+							cout << "    " << *i << endl;
 						}
 					}
 
-					std::list<std::string> denied = data.client->denied;
+					std::list<string> denied = data.client->denied;
 					if (denied.size() > 0) {
-						std::cout << "" << std::endl;
-						std::cout << "CLIENTS Denied: " << std::endl;
-						std::cout << "----------------------------------------------" << std::endl;
-						for (std::list<std::string>::const_iterator i = denied.begin(); i != denied.end(); ++i)
+						cout << "  Denied clients:" << endl;
+						for (auto i = denied.begin(); i != denied.end(); ++i)
 						{
-							std::cout << "\t\t\t" + *i << std::endl;
+							cout << "    " << *i << endl;
 						}
 					}
 				}
@@ -375,39 +397,37 @@ int main(int argc, char* argv[])
 				/* DEVICE LEVEL PERMISSION RIGHTS */
 				if (data.device != nullptr)
 				{
+					cout << "\nDevice rights:" << std::endl;
+
 					std::list<std::shared_ptr<DeviceInfo>> allowed = data.device->allowed;
 					if (allowed.size() > 0) {
-						std::cout << "" << std::endl;
-						std::cout << "DEVICES Allowed: " << std::endl;
-						std::cout << "----------------------------------------------" << std::endl;
-						std::list<std::shared_ptr<DeviceInfo>>::iterator it = allowed.begin();
-						for (; it != allowed.end(); it++)
+						cout << "  Allowed devices:" << endl;
+						int devCount = 0;
+						for (auto it = allowed.begin(); it != allowed.end(); it++)
 						{
-							DeviceInfo okDev = *(*it);
-							std::cout << "DeviceId\t\t: " << okDev.deviceId << endl;
+                            cout << "    Device #" << ++devCount << ":" << endl;
+                            DeviceInfo okDev = *(*it);
+                            cout << "      deviceId: " << okDev.deviceId << endl;
 							if (!okDev.name.empty())
-								std::cout << "DeviceName\t\t: " << okDev.name << endl;
+								cout << "      name: " << okDev.name << endl;
 							if (!okDev.prodUniqueId.empty())
-								std::cout << "ProdUniqueId\t\t: " << okDev.prodUniqueId << endl;
-							std::cout << "" << std::endl;
+								cout << "      prodUniqueId: " << okDev.prodUniqueId << endl;
 						}
 					}
 
 					std::list<std::shared_ptr<DeviceInfo>> denied = data.device->denied;
 					if (denied.size() > 0) {
-						std::cout << "" << std::endl;
-						std::cout << "DEVICES Denied: " << std::endl;
-						std::cout << "----------------------------------------------" << std::endl;
-						std::list<std::shared_ptr<DeviceInfo>>::iterator it = denied.begin();
-						for (; it != denied.end(); it++)
+                        cout << "  Denied devices:" << endl;
+						int devCount = 0;
+						for (auto it = denied.begin(); it != denied.end(); it++)
 						{
+                            cout << "    Device #" << ++devCount << ":" << endl;
 							DeviceInfo ngDev = *(*it);
-							std::cout << "DeviceId\t\t: " << ngDev.deviceId << endl;
+                            cout << "      deviceId: " << ngDev.deviceId << endl;
 							if (!ngDev.name.empty())
-								std::cout << "DeviceName\t\t: " << ngDev.name << endl;
+                                cout << "      name: " << ngDev.name << endl;
 							if (!ngDev.prodUniqueId.empty())
-								std::cout << "ProdUniqueId\t: " << ngDev.prodUniqueId << endl;
-							std::cout << "" << std::endl;
+                                cout << "      prodUniqueId: " << ngDev.prodUniqueId << endl;
 						}
 					}
 				}
@@ -423,16 +443,14 @@ int main(int argc, char* argv[])
 		}
 		else if (method == "listNotificationEvents")
 		{
-			cin.ignore();
-
 			try
 			{
 				ListNotificationEventsResult data;
 				client.listNotificationEvents(data);
 
-				for (NotificationEventDictionary::iterator it = data.notificationEvents.begin(); it != data.notificationEvents.end(); it++)
+				for (auto it = data.notificationEvents.begin(); it != data.notificationEvents.end(); it++)
 				{
-					cout << "  Notification event (" << it->first << "): " << it->second << std::endl;
+					cout << "Notification event (" << it->first << "): " << it->second << std::endl;
 				}
 			}
 			catch (CatenisAPIException &errObject)
@@ -446,19 +464,25 @@ int main(int argc, char* argv[])
 		}
 		else if (method == "checkEffectivePermissionRight")
 		{
-			string eventName, deviceId, isProdUniqueId = "false";
+			string eventName, deviceId;
+            bool isProdUniqueId = false;
 
-			cin >> eventName >> deviceId;
+			isCmdLine >> eventName >> deviceId;
+
+			if (!isCmdLine.eof()) {
+			    string strIsProdUniqueId;
+			    isCmdLine >> strIsProdUniqueId;
+			    isProdUniqueId = strIsProdUniqueId == "true";
+			}
 
 			try
 			{
 				CheckEffectivePermissionRightResult data;
-				client.checkEffectivePermissionRight(data,eventName, deviceId, isProdUniqueId);
+				client.checkEffectivePermissionRight(data,eventName, Device(deviceId, isProdUniqueId));
 
-				for (EffectivePermissionRightDictionary::iterator it = data.effectivePermissionRight.begin(); it != data.effectivePermissionRight.end(); it++)
+				for (auto it = data.effectivePermissionRight.begin(); it != data.effectivePermissionRight.end(); it++)
 				{
-					std::cout << "" << std::endl;
-					std::cout << "Effective Permission Right for ( " << it->first << " ) is >> \t" << it->second << std::endl;
+					cout << "Permission right for device (\"" << it->first << "\"): " << it->second << std::endl;
 				}
 				
 			}
@@ -473,55 +497,56 @@ int main(int argc, char* argv[])
 		}
 		else if (method == "retrieveDeviceIdInfo")
 		{
+			string deviceId;
+			bool isProdUniqueId = false;
 
-			string deviceId, isProdUniqueId = "false";
+			isCmdLine >> deviceId;
 
-			cin >> deviceId;
+            if (!isCmdLine.eof()) {
+                string strIsProdUniqueId;
+                isCmdLine >> strIsProdUniqueId;
+                isProdUniqueId = strIsProdUniqueId == "true";
+            }
 
 			try
 			{
 				DeviceIdInfoResult data;
-				client.retrieveDeviceIdInfo(data, deviceId, isProdUniqueId);
-
-				std::cout << "-----------CatenisNode Information -------------------" << std::endl;
+				client.retrieveDeviceIdInfo(data, Device(deviceId, isProdUniqueId));
 
 				// Print out CatenisNodeInfo
 				if (data.catenisNode != nullptr)
 				{
-					std::cout << "" << std::endl;
-					std::cout << "-----------CatenisNode Information -------------------" << std::endl;
-					std::cout << "CatenisNodeId\t\t\t: " << std::to_string(data.catenisNode->index) << endl;
+					cout << "Catenis node:" << std::endl;
+					cout << "  index: " << data.catenisNode->index << endl;
 
 					if (!data.catenisNode->name.empty())
-						std::cout << "CatenisNodeName\t\t\t: " << data.catenisNode->name << endl;
+						cout << "  name: " << data.catenisNode->name << endl;
 
 					if (!data.catenisNode->description.empty())
-						std::cout << "NodeDescription\t\t\t: " << data.catenisNode->description << endl;
+						cout << "  description: " << data.catenisNode->description << endl;
 				}
 
 				// Print out ClientInfo
 				if (data.client != nullptr)
 				{
-					std::cout << "" << std::endl;
-					std::cout << "-----------Client Information -------------------" << std::endl;
-					std::cout << "ClientId\t\t\t: " << data.client->clientId << endl;
+					cout << "\nClient:" << std::endl;
+					cout << "  clientId: " << data.client->clientId << endl;
 
 					if (!data.device->name.empty())
-						std::cout << "ClientName\t\t\t: " << data.client->name << endl;
+						cout << "  name: " << data.client->name << endl;
 				}
 
 				// Print out DeviceInfo
 				if (data.device != nullptr)
 				{
-					std::cout << "" << std::endl;
-					std::cout << "-----------Device Information -------------------" << std::endl;
-					std::cout << "DeviceId\t\t\t: " << data.device->deviceId << endl;
+					cout << "\nDevice:" << endl;
+                    cout << "  deviceId: " << data.device->deviceId << endl;
 
-					if (!data.device->name.empty())
-						std::cout << "DeviceName\t\t\t: " << data.device->name << endl;
+                    if (!data.device->name.empty())
+						cout << "  name: " << data.device->name << endl;
 
 					if (!data.device->prodUniqueId.empty())
-						std::cout << "ProdUniqueId\t\t: " << data.device->prodUniqueId << endl;
+						cout << "  prodUniqueId: " << data.device->prodUniqueId << endl;
 				}
 			}
 			catch (CatenisAPIException &errObject)
@@ -535,76 +560,188 @@ int main(int argc, char* argv[])
 		}
 		else if (method == "setPermissionRights")
 		{
-
 			string eventName;
-			cin >> eventName;
+			isCmdLine >> eventName;
+
+			/*// Empty input stream
+			string null;
+			std::getline(cin, null);*/
 
 			// ------ SYSTEM LEVEL
-			std::string systemRight = "allow"; 
-			// ------ CATNIS NODE LEVEL
-			char const *setAllowedCtnNode[]	= { "self" };
-			char const *setDeniedCtnNode[]	= { "" };
-			char const *setNoneCtnNode[]    = { "" };
+            cout << "Enter system right (allow/deny): ";
+            string systemRight;
+            std::getline(cin, systemRight);
+
+			// ------ CATENIS NODE LEVEL
+            cout << "Enter Catenis nodes (indices) to allow: ";
+            string strAllowedCtnNodes;
+            std::getline(cin, strAllowedCtnNodes);
+            std::list<string> allowedCtnNodes;
+
+            if (!strAllowedCtnNodes.empty()) {
+                std::istringstream is(strAllowedCtnNodes);
+
+                while (!is.eof()) {
+                    string ctnNodeIndex;
+                    is >> ctnNodeIndex;
+                    allowedCtnNodes.push_back(ctnNodeIndex);
+                }
+            }
+
+            cout << "Enter Catenis nodes (indices) to deny: ";
+            string strDeniedCtnNodes;
+            std::getline(cin, strDeniedCtnNodes);
+            std::list<string> deniedCtnNodes;
+
+            if (!strDeniedCtnNodes.empty()) {
+                std::istringstream is(strDeniedCtnNodes);
+
+                while (!is.eof()) {
+                    string ctnNodeIndex;
+                    is >> ctnNodeIndex;
+                    deniedCtnNodes.push_back(ctnNodeIndex);
+                }
+            }
+
+            cout << "Enter Catenis nodes (indices) to clear right setting: ";
+            string strNoneCtnNodes;
+            std::getline(cin, strNoneCtnNodes);
+            std::list<string> noneCtnNodes;
+
+            if (!strNoneCtnNodes.empty()) {
+                std::istringstream is(strNoneCtnNodes);
+
+                while (!is.eof()) {
+                    string ctnNodeIndex;
+                    is >> ctnNodeIndex;
+                    noneCtnNodes.push_back(ctnNodeIndex);
+                }
+            }
+
 			// ------ CLIENT LEVEL
-			char const *setAllowedClients[] = { "self"};
-			char const *setDeniedClients[]	= { "" };
-			char const *setRevokedClients[] = { "" };
-			// ------ DEVICE LEVEL
-			std::map<std::string, bool> setAllowedDevices = { { "dEtmgLXWL44fmh99gnND", false },{ "", false},{ "", false } };
-			std::map<std::string, bool> setDeniedDevices  = { { "", false },{ "", false } };
-			std::map<std::string, bool> setRevokedDevices = { { "", false },{ "", false } };
+            cout << "Enter clients (IDs) to allow: ";
+            string strAllowedClients;
+            std::getline(cin, strAllowedClients);
+            std::list<string> allowedClients;
 
-			/* 
-			 * Store Permission Rights into appropriate containers
-			*/
-			// ------ CATNIS NODE LEVEL
-			std::list<std::string> allowedCtnNodes(setAllowedCtnNode, setAllowedCtnNode + sizeof(setAllowedCtnNode) / sizeof(*setAllowedCtnNode));
-			std::list<std::string> deniedCtnNodes(setDeniedCtnNode, setDeniedCtnNode + sizeof(setDeniedCtnNode) / sizeof(*setDeniedCtnNode));
-			std::list<std::string> revokedCtnNodes(setNoneCtnNode, setNoneCtnNode + sizeof(setNoneCtnNode) / sizeof(*setNoneCtnNode));
-			
-			// ------ CLIENT LEVEL
-			std::list<std::string> allowedClients(setAllowedClients, setAllowedClients + sizeof(setAllowedClients) / sizeof(*setAllowedClients));
-			std::list<std::string> deniedClients(setDeniedClients, setDeniedClients + sizeof(setDeniedClients) / sizeof(*setDeniedClients));
-			std::list<std::string> revokedClients(setRevokedClients, setRevokedClients + sizeof(setRevokedClients) / sizeof(*setRevokedClients));
-			
-			// ------ DEVICE LEVEL
-			std::map<std::string, bool>::iterator it = setAllowedDevices.begin();
+            if (!strAllowedClients.empty()) {
+                std::istringstream is(strAllowedClients);
 
-			// Allowed Devices
-			std::list<std::shared_ptr<SetRightsDeviceInfo>> allowedDevices;
-			for (; it != setAllowedDevices.end(); it++)
-			{
-				std::shared_ptr<SetRightsDeviceInfo> thisDevice(new SetRightsDeviceInfo(it->first, it->second));
-				allowedDevices.push_back(thisDevice);
-			}
+                while (!is.eof()) {
+                    string clientId;
+                    is >> clientId;
+                    allowedClients.push_back(clientId);
+                }
+            }
 
-			// Denied Devices
-			it = setDeniedDevices.begin();
-			std::list<std::shared_ptr<SetRightsDeviceInfo>> deniedDevices;
-			for (; it != setDeniedDevices.end(); it++)
-			{
-				std::shared_ptr<SetRightsDeviceInfo> thisDevice(new SetRightsDeviceInfo(it->first, it->second));
-				deniedDevices.push_back(thisDevice);
-			}
+            cout << "Enter clients (IDs) to deny: ";
+            string strDeniedClients;
+            std::getline(cin, strDeniedClients);
+            std::list<string> deniedClients;
 
-			// Revoked Devices
-			it = setRevokedDevices.begin();
-			std::list<std::shared_ptr<SetRightsDeviceInfo>> revokedDevices;
-			for (; it != setRevokedDevices.end(); it++)
-			{
-				std::shared_ptr<SetRightsDeviceInfo> thisDevice(new SetRightsDeviceInfo(it->first, it->second));
-				revokedDevices.push_back(thisDevice);
-			}
+            if (!strDeniedClients.empty()) {
+                std::istringstream is(strDeniedClients);
+
+                while (!is.eof()) {
+                    string clientId;
+                    is >> clientId;
+                    deniedClients.push_back(clientId);
+                }
+            }
+
+            cout << "Enter clients (IDs) to clear right setting: ";
+            string strNoneClients;
+            std::getline(cin, strNoneClients);
+            std::list<string> noneClients;
+
+            if (!strNoneClients.empty()) {
+                std::istringstream is(strNoneClients);
+
+                while (!is.eof()) {
+                    string clientId;
+                    is >> clientId;
+                    noneClients.push_back(clientId);
+                }
+            }
+
+            // ------ DEVICE LEVEL
+            cout << "Enter devices (IDs) to allow (precede product unique ID with %): ";
+            string strAllowedDevices;
+            std::getline(cin, strAllowedDevices);
+            std::list<Device> allowedDevices;
+
+            if (!strAllowedDevices.empty()) {
+                std::istringstream is(strAllowedDevices);
+
+                while (!is.eof()) {
+                    string deviceId;
+                    is >> deviceId;
+                    bool isProdUniqueId = false;
+
+                    if (deviceId.size() > 1 && deviceId.front() == '%') {
+                        // Input ID is actually a product unique ID. Delete leading '%' character
+                        deviceId.erase(0, 1);
+                        isProdUniqueId = true;
+                    }
+
+                    allowedDevices.push_back(Device(deviceId, isProdUniqueId));
+                }
+            }
+
+            cout << "Enter devices (IDs) to deny (precede product unique ID with %): ";
+            string strDeniedDevices;
+            std::getline(cin, strDeniedDevices);
+            std::list<Device> deniedDevices;
+
+            if (!strDeniedDevices.empty()) {
+                std::istringstream is(strDeniedDevices);
+
+                while (!is.eof()) {
+                    string deviceId;
+                    is >> deviceId;
+                    bool isProdUniqueId = false;
+
+                    if (deviceId.size() > 1 && deviceId.front() == '%') {
+                        // Input ID is actually a product unique ID. Delete leading '%' character
+                        deviceId.erase(0, 1);
+                        isProdUniqueId = true;
+                    }
+
+                    deniedDevices.push_back(Device(deviceId, isProdUniqueId));
+                }
+            }
+
+            cout << "Enter devices (IDs) to clear right setting (precede product unique ID with %): ";
+            string strNoneDevices;
+            std::getline(cin, strNoneDevices);
+            std::list<Device> noneDevices;
+
+            if (!strNoneDevices.empty()) {
+                std::istringstream is(strNoneDevices);
+
+                while (!is.eof()) {
+                    string deviceId;
+                    is >> deviceId;
+                    bool isProdUniqueId = false;
+
+                    if (deviceId.size() > 1 && deviceId.front() == '%') {
+                        // Input ID is actually a product unique ID. Delete leading '%' character
+                        deviceId.erase(0, 1);
+                        isProdUniqueId = true;
+                    }
+
+                    noneDevices.push_back(Device(deviceId, isProdUniqueId));
+                }
+            }
+
+            cout << endl;
 
 			/*
 			* Store Permission Right Containers into appropriate structure
 			*/
-			// ------ CATNIS NODE LEVEL
-			std::shared_ptr<SetRightsCtnNode> ctnNodeRights(new SetRightsCtnNode(allowedCtnNodes, deniedCtnNodes, revokedCtnNodes));
-			// ------ CLIENT LEVEL
-			std::shared_ptr<SetRightsClient> clientRights(new SetRightsClient(allowedClients, deniedClients, revokedClients));
-			// ------ DEVICE LEVEL
-			std::shared_ptr<SetRightsDevice> deviceRights(new SetRightsDevice(allowedDevices, deniedDevices, revokedDevices));
+			SetRightsCtnNode ctnNodeRights(allowedCtnNodes, deniedCtnNodes, noneCtnNodes);
+			SetRightsClient clientRights(allowedClients, deniedClients, noneClients);
+			SetRightsDevice deviceRights(allowedDevices, deniedDevices, noneDevices);
 
 			/*
 			* Execute the Set Permission Right Command / and output the response
@@ -612,14 +749,8 @@ int main(int argc, char* argv[])
 			try
 			{
 				SetPermissionRightsResult data;
-				client.setPermissionRights(data, eventName, systemRight, ctnNodeRights, clientRights, deviceRights);
-				if (data.success == true)
-				{
-					std::cout << "\nCongratulations.  Permission Rights for [ " + eventName + " ] were set successfully" << std::endl;
-				}
-				else {
-					std::cout << "Sorry. Setting Permission Rights for " + eventName + " was unsuccessful" << std::endl;
-				}
+				client.setPermissionRights(data, eventName, systemRight, &ctnNodeRights, &clientRights, &deviceRights);
+				cout << "Permission rights successfully set" << std::endl;
 			}
 			catch (CatenisAPIException &errObject)
 			{
@@ -630,12 +761,15 @@ int main(int argc, char* argv[])
 				std::cerr << "Unknown error encountered: call to client.setPermissionRights." << std::endl;
 			}
 		}
+		else if (method == "help") {
+            showUsage();
+        }
         else if (method == "exit") {
             exit = true;
         }
         else
         {
-            cout << "incorrect method" << endl;
+            cout << "invalid command" << endl;
         }
     }
     while (!exit);

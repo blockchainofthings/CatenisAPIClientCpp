@@ -21,6 +21,8 @@ function(merge_static_libs output_library)
     set(libs ${ARGV})
     list(REMOVE_AT libs 0)
 
+    list(GET libs 0 mainlib)
+
     # Create a dummy file that the target will depend on
     set(dummyfile ${CMAKE_CURRENT_BINARY_DIR}/${output_library}_dummy.c)
     file(WRITE ${dummyfile} "const char * dummy = \"${dummyfile}\";")
@@ -48,6 +50,10 @@ function(merge_static_libs output_library)
             endforeach()
         else()
             get_target_property(libfile ${lib} LOCATION)
+            if(${CMAKE_BUILD_TYPE} STREQUAL "Debug" AND ${lib} STREQUAL ${mainlib})
+                # Fix name of main library in case of Debug build type
+                string(REGEX REPLACE "\\.a" "d.a" libfile ${libfile})
+            endif()
             list(APPEND libfiles "${libfile}")
         endif(multiconfig)
     endforeach()
@@ -79,6 +85,10 @@ function(merge_static_libs output_library)
             message(FATAL_ERROR "Multiple configurations are not supported")
         endif()
         get_target_property(outfile ${output_target} LOCATION)
+        if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+            # Fix name of output library in case of Debug build type
+            string(REGEX REPLACE "\\.a" "d.a" outfile ${outfile})
+        endif()
         add_custom_command(TARGET ${output_target} POST_BUILD
                 COMMAND rm ${outfile}
                 COMMAND /usr/bin/libtool -static -o ${outfile}
@@ -91,6 +101,10 @@ function(merge_static_libs output_library)
         endif()
         get_target_property(outfile ${output_target} LOCATION)
         message(STATUS "output file location is ${outfile}")
+        if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+            # Fix name of output library in case of Debug build type
+            string(REGEX REPLACE "\\.a" "d.a" outfile ${outfile})
+        endif()
         foreach(lib ${libfiles})
             # objlistfile will contain the list of object files for the library
             set(objlistfile ${lib}.objlist)

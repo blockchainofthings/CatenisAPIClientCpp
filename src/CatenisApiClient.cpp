@@ -71,8 +71,8 @@ void ctn::CtnApiClient::sendMessage(SendMessageResult &data, const Device &devic
 
     json_spirit::mObject objTargetDevice;
 
-    objTargetDevice["id"] = device.device_id;
-    objTargetDevice["isProdUniqueId"] = device.is_prod_uniqueid;
+    objTargetDevice["id"] = device.id;
+    objTargetDevice["isProdUniqueId"] = device.isProdUniqueId;
 
     objData["targetDevice"] = objTargetDevice;
 
@@ -92,8 +92,8 @@ void ctn::CtnApiClient::sendMessage(SendMessageResult &data, const Device &devic
     Poco::JSON::Object request_data;
 
     Poco::JSON::Object targetD;
-    targetD.set("id", device.device_id);
-    targetD.set("isProdUniqueId", device.is_prod_uniqueid);
+    targetD.set("id", device.id);
+    targetD.set("isProdUniqueId", device.isProdUniqueId);
     request_data.set("targetDevice", targetD);
 
     request_data.set("message", message);
@@ -215,7 +215,7 @@ void ctn::CtnApiClient::retrievePermissionRights(RetrievePermissionRightsResult 
 }
 
 // API Method: Set Permission Rights
-void ctn::CtnApiClient::setPermissionRights(SetPermissionRightsResult &data, std::string eventName, std::string system, std::shared_ptr<SetRightsCtnNode> ctnNodeObj = nullptr, std::shared_ptr<SetRightsClient> clientObj = nullptr, std::shared_ptr<SetRightsDevice> deviceObj = nullptr)
+void ctn::CtnApiClient::setPermissionRights(SetPermissionRightsResult &data, std::string eventName, std::string systemRight, SetRightsCtnNode *cntNodesRights = nullptr, SetRightsClient *clientRights = nullptr, SetRightsDevice *deviceRights = nullptr)
 {
 	std::map<std::string, std::string> params;
 	std::map<std::string, std::string> queries;
@@ -229,18 +229,18 @@ void ctn::CtnApiClient::setPermissionRights(SetPermissionRightsResult &data, std
 	std::list<std::string> denied;
 
 	// //////////////////////////// Prepare JSON for System Level ////////////////////////////////
-	if (!system.empty())
-		objData["system"] = system;
+	if (!systemRight.empty())
+		objData["system"] = systemRight;
 
 	// //////////////////////////// Prepare JSON for Catenis Node Level ////////////////////////////////
-	if (ctnNodeObj != nullptr)
+	if (cntNodesRights != nullptr)
 	{
 		json_spirit::mObject ctnNode;
 
-		if (ctnNodeObj->allowed.size() > 0)
+		if (cntNodesRights->allowed.size() > 0)
 		{
 			json_spirit::mArray allowCtnNode;
-			for (std::list<std::string>::const_iterator i = ctnNodeObj->allowed.begin(); i != ctnNodeObj->allowed.end(); ++i)
+			for (std::list<std::string>::const_iterator i = cntNodesRights->allowed.begin(); i != cntNodesRights->allowed.end(); ++i)
 			{
 				if (!(*i).empty())
 					allowCtnNode.push_back(*i);
@@ -248,10 +248,10 @@ void ctn::CtnApiClient::setPermissionRights(SetPermissionRightsResult &data, std
 			if (allowCtnNode.size() > 0)
 				ctnNode["allow"] = allowCtnNode;
 		}
-		if (ctnNodeObj->denied.size() > 0)
+		if (cntNodesRights->denied.size() > 0)
 		{
 			json_spirit::mArray denyCtnNode;
-			for (std::list<std::string>::const_iterator i = ctnNodeObj->denied.begin(); i != ctnNodeObj->denied.end(); ++i)
+			for (std::list<std::string>::const_iterator i = cntNodesRights->denied.begin(); i != cntNodesRights->denied.end(); ++i)
 			{
 				if (!(*i).empty())
 					denyCtnNode.push_back(*i);
@@ -259,30 +259,30 @@ void ctn::CtnApiClient::setPermissionRights(SetPermissionRightsResult &data, std
 			if (denyCtnNode.size() > 0)
 				ctnNode["deny"] = denyCtnNode;
 		}
-		if (ctnNodeObj->revoked.size() > 0)
+		if (cntNodesRights->none.size() > 0)
 		{
-			json_spirit::mArray revokeCtnNode;
-			for (std::list<std::string>::const_iterator i = ctnNodeObj->revoked.begin(); i != ctnNodeObj->revoked.end(); ++i)
+			json_spirit::mArray noneCtnNode;
+			for (std::list<std::string>::const_iterator i = cntNodesRights->none.begin(); i != cntNodesRights->none.end(); ++i)
 			{
 				if (!(*i).empty())
-					revokeCtnNode.push_back(*i);
+					noneCtnNode.push_back(*i);
 			}
-			if (revokeCtnNode.size() > 0)
-				ctnNode["none"] = revokeCtnNode;
+			if (noneCtnNode.size() > 0)
+				ctnNode["none"] = noneCtnNode;
 		}
 		objData["catenisNode"] = ctnNode;
 	}
 
 
 	// //////////////////////////// Prepare JSON for Client Level ////////////////////////////////
-	if (clientObj != nullptr)
+	if (clientRights != nullptr)
 	{
 		json_spirit::mObject client;
 
-		if (clientObj->allowed.size() > 0)
+		if (clientRights->allowed.size() > 0)
 		{
 			json_spirit::mArray allowClient;
-			for (std::list<std::string>::const_iterator i = clientObj->allowed.begin(); i != clientObj->allowed.end(); ++i)
+			for (std::list<std::string>::const_iterator i = clientRights->allowed.begin(); i != clientRights->allowed.end(); ++i)
 			{
 				if (!(*i).empty())
 					allowClient.push_back(*i);
@@ -290,10 +290,10 @@ void ctn::CtnApiClient::setPermissionRights(SetPermissionRightsResult &data, std
 			if (allowClient.size() > 0)
 				client["allow"] = allowClient;
 		}
-		if (clientObj->denied.size() > 0)
+		if (clientRights->denied.size() > 0)
 		{
 			json_spirit::mArray denyClient;
-			for (std::list<std::string>::const_iterator i = clientObj->denied.begin(); i != clientObj->denied.end(); ++i)
+			for (std::list<std::string>::const_iterator i = clientRights->denied.begin(); i != clientRights->denied.end(); ++i)
 			{
 				if (!(*i).empty())
 					denyClient.push_back(*i);
@@ -301,71 +301,71 @@ void ctn::CtnApiClient::setPermissionRights(SetPermissionRightsResult &data, std
 			if (denyClient.size() > 0)
 				client["deny"] = denyClient;
 		}
-		if (clientObj->revoked.size() > 0)
+		if (clientRights->none.size() > 0)
 		{
-			json_spirit::mArray revokeClient;
-			for (std::list<std::string>::const_iterator i = clientObj->revoked.begin(); i != clientObj->revoked.end(); ++i)
+			json_spirit::mArray noneClient;
+			for (std::list<std::string>::const_iterator i = clientRights->none.begin(); i != clientRights->none.end(); ++i)
 			{
 				if (!(*i).empty())
-					revokeClient.push_back(*i);
+					noneClient.push_back(*i);
 			}
-			if (revokeClient.size() > 0)
-				client["none"] = revokeClient;
+			if (noneClient.size() > 0)
+				client["none"] = noneClient;
 		}
 		objData["client"] = client;
 	}
 
 	// //////////////////////////// Prepare JSON for Device Level ////////////////////////////////
-	if (deviceObj != nullptr)
+	if (deviceRights != nullptr)
 	{
 		json_spirit::mObject device;
-		if (deviceObj->allowed.size() > 0)
+		if (deviceRights->allowed.size() > 0)
 		{
 			json_spirit::mArray allowDevice;
 			json_spirit::mObject tmpObj;
-			for (std::list<std::shared_ptr<SetRightsDeviceInfo>>::iterator i = deviceObj->allowed.begin(); i != deviceObj->allowed.end(); ++i)
+			for (std::list<Device>::iterator i = deviceRights->allowed.begin(); i != deviceRights->allowed.end(); ++i)
 			{
-				if (!(*(*i)).id.empty())
+				if (!(*i).id.empty())
 				{
-					tmpObj["id"] = (*(*i)).id;
-					tmpObj["isProdUniqueId"] = (*(*i)).isProdUniqueId;
+					tmpObj["id"] = (*i).id;
+					tmpObj["isProdUniqueId"] = (*i).isProdUniqueId;
 					allowDevice.push_back(tmpObj);
 				}
 			}
 			if (allowDevice.size() > 0)
 				device["allow"] = allowDevice;
 		}
-		if (deviceObj->denied.size() > 0)
+		if (deviceRights->denied.size() > 0)
 		{
 			json_spirit::mArray denyDevice;
 			json_spirit::mObject tmpObj;
-			for (std::list<std::shared_ptr<SetRightsDeviceInfo>>::iterator i = deviceObj->denied.begin(); i != deviceObj->denied.end(); ++i)
+			for (std::list<Device>::iterator i = deviceRights->denied.begin(); i != deviceRights->denied.end(); ++i)
 			{
-				if (!(*(*i)).id.empty())
+				if (!(*i).id.empty())
 				{
-					tmpObj["id"] = (*(*i)).id;
-					tmpObj["isProdUniqueId"] = (*(*i)).isProdUniqueId;
+					tmpObj["id"] = (*i).id;
+					tmpObj["isProdUniqueId"] = (*i).isProdUniqueId;
 					denyDevice.push_back(tmpObj);
 				}
 			}
 			if (denyDevice.size() > 0)
 				device["deny"] = denyDevice;
 		}
-		if (deviceObj->revoked.size() > 0)
+		if (deviceRights->none.size() > 0)
 		{
-			json_spirit::mArray revokeDevice;
+			json_spirit::mArray noneevice;
 			json_spirit::mObject tmpObj;
-			for (std::list<std::shared_ptr<SetRightsDeviceInfo>>::iterator i = deviceObj->revoked.begin(); i != deviceObj->revoked.end(); ++i)
+			for (std::list<Device>::iterator i = deviceRights->none.begin(); i != deviceRights->none.end(); ++i)
 			{
-				if (!(*(*i)).id.empty())
+				if (!(*i).id.empty())
 				{
-					tmpObj["id"] = (*(*i)).id;
-					tmpObj["isProdUniqueId"] = (*(*i)).isProdUniqueId;
-					revokeDevice.push_back(tmpObj);
+					tmpObj["id"] = (*i).id;
+					tmpObj["isProdUniqueId"] = (*i).isProdUniqueId;
+					noneevice.push_back(tmpObj);
 				}
 			}
-			if (revokeDevice.size() > 0)
-				device["none"] = revokeDevice;
+			if (noneevice.size() > 0)
+				device["none"] = noneevice;
 		}
 		objData["device"] = device;
 	}
@@ -379,17 +379,17 @@ void ctn::CtnApiClient::setPermissionRights(SetPermissionRightsResult &data, std
 	std::list<std::string> denied;
 
 	// //////////////////////////// Prepare JSON for System Level ////////////////////////////////
-	if (!system.empty())
-		request_data.set("system", system);
+	if (!systemRight.empty())
+		request_data.set("system", systemRight);
 
 	// //////////////////////////// Prepare JSON for Catenis Node Level ////////////////////////////////
-	if (ctnNodeObj != nullptr)
+	if (cntNodesRights != nullptr)
 	{
 		Poco::JSON::Object ctnNode;
-		if (ctnNodeObj->allowed.size() > 0)
+		if (cntNodesRights->allowed.size() > 0)
 		{
 			Poco::JSON::Array allowCtnNode;
-			for (std::list<std::string>::const_iterator i = ctnNodeObj->allowed.begin(); i != ctnNodeObj->allowed.end(); ++i)
+			for (std::list<std::string>::const_iterator i = cntNodesRights->allowed.begin(); i != cntNodesRights->allowed.end(); ++i)
 			{
 				if (!(*i).empty())
 					allowCtnNode.add(*i);
@@ -397,10 +397,10 @@ void ctn::CtnApiClient::setPermissionRights(SetPermissionRightsResult &data, std
 			if(allowCtnNode.size() > 0)
 				ctnNode.set("allow", allowCtnNode);
 		}
-		if (ctnNodeObj->denied.size() > 0)
+		if (cntNodesRights->denied.size() > 0)
 		{
 			Poco::JSON::Array denyCtnNode;
-			for (std::list<std::string>::const_iterator i = ctnNodeObj->denied.begin(); i != ctnNodeObj->denied.end(); ++i)
+			for (std::list<std::string>::const_iterator i = cntNodesRights->denied.begin(); i != cntNodesRights->denied.end(); ++i)
 			{
 				if (!(*i).empty())
 					denyCtnNode.add(*i);
@@ -408,28 +408,28 @@ void ctn::CtnApiClient::setPermissionRights(SetPermissionRightsResult &data, std
 			if (denyCtnNode.size() > 0)
 				ctnNode.set("deny", denyCtnNode);
 		}
-		if (ctnNodeObj->revoked.size() > 0)
+		if (cntNodesRights->none.size() > 0)
 		{
-			Poco::JSON::Array revokeCtnNode;
-			for (std::list<std::string>::const_iterator i = ctnNodeObj->revoked.begin(); i != ctnNodeObj->revoked.end(); ++i)
+			Poco::JSON::Array noneCtnNode;
+			for (std::list<std::string>::const_iterator i = cntNodesRights->none.begin(); i != cntNodesRights->none.end(); ++i)
 			{
 				if (!(*i).empty())
-					revokeCtnNode.add(*i);
+					noneCtnNode.add(*i);
 			}
-			if (revokeCtnNode.size() > 0)
-				ctnNode.set("none", revokeCtnNode);
+			if (noneCtnNode.size() > 0)
+				ctnNode.set("none", noneCtnNode);
 		}
 		request_data.set("catenisNode", ctnNode);
 	}
 
 	// //////////////////////////// Prepare JSON for Client Level ////////////////////////////////
-	if (clientObj != nullptr)
+	if (clientRights != nullptr)
 	{
 		Poco::JSON::Object client;
-		if (clientObj->allowed.size() > 0)
+		if (clientRights->allowed.size() > 0)
 		{
 			Poco::JSON::Array allowClient;
-			for (std::list<std::string>::const_iterator i = clientObj->allowed.begin(); i != clientObj->allowed.end(); ++i)
+			for (std::list<std::string>::const_iterator i = clientRights->allowed.begin(); i != clientRights->allowed.end(); ++i)
 			{
 				if (!(*i).empty())
 					allowClient.add(*i);
@@ -437,10 +437,10 @@ void ctn::CtnApiClient::setPermissionRights(SetPermissionRightsResult &data, std
 			if (allowClient.size() > 0)
 				client.set("allow", allowClient);
 		}
-		if (clientObj->denied.size() > 0)
+		if (clientRights->denied.size() > 0)
 		{
 			Poco::JSON::Array denyClient;
-			for (std::list<std::string>::const_iterator i = clientObj->denied.begin(); i != clientObj->denied.end(); ++i)
+			for (std::list<std::string>::const_iterator i = clientRights->denied.begin(); i != clientRights->denied.end(); ++i)
 			{
 				if (!(*i).empty())
 					denyClient.add(*i);
@@ -448,71 +448,71 @@ void ctn::CtnApiClient::setPermissionRights(SetPermissionRightsResult &data, std
 			if (denyClient.size() > 0)
 				client.set("deny", denyClient);
 		}
-		if (clientObj->revoked.size() > 0)
+		if (clientRights->none.size() > 0)
 		{
-			Poco::JSON::Array revokeClient;
-			for (std::list<std::string>::const_iterator i = clientObj->revoked.begin(); i != clientObj->revoked.end(); ++i)
+			Poco::JSON::Array noneClient;
+			for (std::list<std::string>::const_iterator i = clientRights->none.begin(); i != clientRights->none.end(); ++i)
 			{
 				if (!(*i).empty())
-					revokeClient.add(*i);
+					noneClient.add(*i);
 			}
-			if (revokeClient.size() > 0)
-				client.set("none", revokeClient);
+			if (noneClient.size() > 0)
+				client.set("none", noneClient);
 		}
 		request_data.set("client", client);
 	}
 
 	// //////////////////////////// Prepare JSON for Device Level ////////////////////////////////
-	if (deviceObj != nullptr)
+	if (deviceRights != nullptr)
 	{
 		Poco::JSON::Object device;
-		if (deviceObj->allowed.size() > 0)
+		if (deviceRights->allowed.size() > 0)
 		{			
 			Poco::JSON::Array allowDevice;
 			Poco::JSON::Object tmpObj;
-			for (std::list<std::shared_ptr<SetRightsDeviceInfo>>::iterator i = deviceObj->allowed.begin(); i != deviceObj->allowed.end(); ++i)
+			for (std::list<Device>::iterator i = deviceRights->allowed.begin(); i != deviceRights->allowed.end(); ++i)
 			{
-				if (!(*(*i)).id.empty())
+				if (!(*i).id.empty())
 				{
-					tmpObj.set("id", (*(*i)).id);
-					tmpObj.set("isProdUniqueId", (*(*i)).isProdUniqueId);
+					tmpObj.set("id", (*i).id);
+					tmpObj.set("isProdUniqueId", (*i).isProdUniqueId);
 					allowDevice.add(tmpObj);
 				}
 			}
 			if (allowDevice.size() > 0)
 				device.set("allow", allowDevice);
 		}
-		if (deviceObj->denied.size() > 0)
+		if (deviceRights->denied.size() > 0)
 		{
 			Poco::JSON::Array denyDevice;
 			Poco::JSON::Object tmpObj;
-			for (std::list<std::shared_ptr<SetRightsDeviceInfo>>::iterator i = deviceObj->denied.begin(); i != deviceObj->denied.end(); ++i)
+			for (std::list<Device>::iterator i = deviceRights->denied.begin(); i != deviceRights->denied.end(); ++i)
 			{
-				if (!(*(*i)).id.empty())
+				if (!(*i).id.empty())
 				{
-					tmpObj.set("id", (*(*i)).id);
-					tmpObj.set("isProdUniqueId", (*(*i)).isProdUniqueId);
+					tmpObj.set("id", (*i).id);
+					tmpObj.set("isProdUniqueId", (*i).isProdUniqueId);
 					denyDevice.add(tmpObj);
 				}
 			}
 			if (denyDevice.size() > 0)
 				device.set("deny", denyDevice);
 		}
-		if (deviceObj->revoked.size() > 0)
+		if (deviceRights->none.size() > 0)
 		{
-			Poco::JSON::Array revokeDevice;
+			Poco::JSON::Array noneevice;
 			Poco::JSON::Object tmpObj;
-			for (std::list<std::shared_ptr<SetRightsDeviceInfo>>::iterator i = deviceObj->revoked.begin(); i != deviceObj->revoked.end(); ++i)
+			for (std::list<Device>::iterator i = deviceRights->none.begin(); i != deviceRights->none.end(); ++i)
 			{
-				if (!(*(*i)).id.empty())
+				if (!(*i).id.empty())
 				{
-					tmpObj.set("id", (*(*i)).id);
-					tmpObj.set("isProdUniqueId", (*(*i)).isProdUniqueId);
-					revokeDevice.add(tmpObj);
+					tmpObj.set("id", (*i).id);
+					tmpObj.set("isProdUniqueId", (*i).isProdUniqueId);
+					noneevice.add(tmpObj);
 				}
 			}
-			if (revokeDevice.size() > 0)
-				device.set("none", revokeDevice);
+			if (noneevice.size() > 0)
+				device.set("none", noneevice);
 		}
 		request_data.set("device", device);
 	}
@@ -540,16 +540,15 @@ void ctn::CtnApiClient::listNotificationEvents(ListNotificationEventsResult &dat
 }
 
 // API Method: Check Effective Permission Events
-void ctn::CtnApiClient::checkEffectivePermissionRight(CheckEffectivePermissionRightResult &data, std::string eventName, std::string deviceId, std::string isProdUniqueId = "false")
+void ctn::CtnApiClient::checkEffectivePermissionRight(CheckEffectivePermissionRightResult &data, std::string eventName, Device device)
 {
-
 	std::map<std::string, std::string> params;
 	std::map<std::string, std::string> queries;
 
-	queries["isProdUniqueId"] = "false"; // isProdUniqueId;
+    params[":eventName"] = eventName;
+    params[":deviceId"] = device.id;
 
-	params[":eventName"] = eventName;
-	params[":deviceId"] = deviceId;
+	queries["isProdUniqueId"] = device.isProdUniqueId ? "true" : "false";
 
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
 	json_spirit::mValue request_data;
@@ -562,15 +561,15 @@ void ctn::CtnApiClient::checkEffectivePermissionRight(CheckEffectivePermissionRi
 }
 
 // API Method: Check Effective Permission Events
-void ctn::CtnApiClient::retrieveDeviceIdInfo(DeviceIdInfoResult &data, std::string deviceId, std::string isProdUniqueId = "false")
+void ctn::CtnApiClient::retrieveDeviceIdInfo(DeviceIdInfoResult &data, Device device)
 {
 
 	std::map<std::string, std::string> params;
 	std::map<std::string, std::string> queries;
 
-	queries["isProdUniqueId"] = isProdUniqueId;
+	params[":deviceId"] = device.id;
 
-	params[":deviceId"] = deviceId;
+    queries["isProdUniqueId"] = device.isProdUniqueId ? "true" : "false";
 
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
 	json_spirit::mValue request_data;

@@ -62,14 +62,11 @@ struct MessageOptions
  */
 struct Device
 {
-    std::string device_id;
-    bool is_prod_uniqueid;
+    std::string id;
+    bool isProdUniqueId;
     
     Device(std::string device_id, bool is_prod_uniqueid = false)
-    {
-        this->device_id = device_id;
-        this->is_prod_uniqueid = is_prod_uniqueid;
-    }
+        : id(device_id), isProdUniqueId(is_prod_uniqueid) {}
 };
 
 /*
@@ -213,10 +210,10 @@ struct ListPermissionEventsResult
 
 
 /*
-* Permission Rights at Device Level structure (Array of Objects)
+* Permission rights at device level structure
 *
-* @member allowed : Object structure of allowed virtual devices
-* @member denied  : Object structure of denied virtual devices
+* @member allowed : list of allowed virtual devices
+* @member denied  : list of denied virtual devices
 *
 */
 struct PermissionRightsDevice
@@ -232,10 +229,10 @@ struct PermissionRightsDevice
 };
 
 /*
-* Permission Rights Catenis Level structure
+* Permission rights at Catenis node level structure
 *
-* @member allowed : List of allowed catenis NOdes
-* @member denied : List of denied catenis Nodes
+* @member allowed : List of allowed Catenis Nodes
+* @member denied : List of denied Catenis Nodes
 *
 */
 struct PermissionRightsCatenisNode
@@ -251,7 +248,7 @@ struct PermissionRightsCatenisNode
 };
 
 /*
-* Permission Rights Client Level structure
+* Permission rights at client level structure
 *
 * @member allowed : List of allowed clients
 * @member denied : List of denied clients
@@ -273,9 +270,9 @@ struct PermissionRightsClient
 * Retrieve Permission Rights API method response structure
 *
 * @member system : Permission right set at the system level.
-* @member catenisNode : Lists of allowed and denied catenisNodes
-* @member catenisNode : Lists of allowed and denied clients
-* @member catenisNode : Device Information of allowed and denied devices
+* @member catenisNode : Permission rights set at catenisNodes level
+* @member client : Permission rights set at client level
+* @member device : Permission rights set at device level
 */
 struct RetrievePermissionRightsResult
 {
@@ -283,24 +280,6 @@ struct RetrievePermissionRightsResult
 	std::shared_ptr<PermissionRightsCatenisNode> catenisNode;
 	std::shared_ptr<PermissionRightsClient> client;
 	std::shared_ptr<PermissionRightsDevice> device;
-};
-
-/*
-* Device info structure for Set Permission Rights
-*
-* @member deviceId : Catenis ID of device.
-* @member name : Device name.
-* @member prodUniqueId : Device's product unique ID.
-*/
-
-struct SetRightsDeviceInfo
-{
-	std::string id;
-	bool isProdUniqueId;
-
-	SetRightsDeviceInfo(std::string id_arg, bool is_prod_unique_id)
-		: id(id_arg), isProdUniqueId(is_prod_unique_id) {}
-	~SetRightsDeviceInfo() {}
 };
 
 /*
@@ -313,15 +292,15 @@ struct SetRightsDeviceInfo
 */
 struct SetRightsDevice
 {
-	std::list< std::shared_ptr<SetRightsDeviceInfo> > allowed;
-	std::list< std::shared_ptr<SetRightsDeviceInfo> > denied;
-	std::list< std::shared_ptr<SetRightsDeviceInfo> > revoked;
+	std::list<Device> allowed;
+	std::list<Device> denied;
+	std::list<Device> none;
 
 	SetRightsDevice(
-		std::list< std::shared_ptr<SetRightsDeviceInfo> > allowedDevices,
-		std::list< std::shared_ptr<SetRightsDeviceInfo> > deniedDevices,
-		std::list< std::shared_ptr<SetRightsDeviceInfo> > noneDevices)
-		: allowed(allowedDevices), denied(deniedDevices), revoked(noneDevices) {}
+		std::list<Device> &allowedDevices,
+		std::list<Device> &deniedDevices,
+		std::list<Device> &noneDevices)
+		: allowed(allowedDevices), denied(deniedDevices), none(noneDevices) {}
 	~SetRightsDevice() {}
 };
 
@@ -337,13 +316,14 @@ struct SetRightsCtnNode
 {
 	std::list<std::string> allowed;
 	std::list<std::string> denied;
-	std::list<std::string> revoked;
+	std::list<std::string> none;
+
 
 	SetRightsCtnNode(
 		std::list<std::string> allowedCtnNodes,
 		std::list<std::string> deniedCtnNodes,
 		std::list<std::string> noneCtnNodes)
-		: allowed(allowedCtnNodes), denied(deniedCtnNodes), revoked(noneCtnNodes) {}
+		: allowed(allowedCtnNodes), denied(deniedCtnNodes), none(noneCtnNodes) {}
 	~SetRightsCtnNode() {}
 };
 
@@ -352,20 +332,20 @@ struct SetRightsCtnNode
 *
 * @member allowed : List of allowed clients
 * @member denied : List of denied clients
-* @member none : List of clients for which Rights should be removed
+* @member none : List of clients for which rights should be removed
 *
 */
 struct SetRightsClient
 {
 	std::list<std::string> allowed;
 	std::list<std::string> denied;
-	std::list<std::string> revoked;
+	std::list<std::string> none;
 
 	SetRightsClient(
 		std::list<std::string> allowedClients,
 		std::list<std::string> deniedClients,
 		std::list<std::string> noneClients)
-		: allowed(allowedClients), denied(deniedClients), revoked(noneClients) {}
+		: allowed(allowedClients), denied(deniedClients), none(noneClients) {}
 	~SetRightsClient() {}
 };
 
@@ -411,9 +391,9 @@ struct CheckEffectivePermissionRightResult
 /*
 * Catenis Node info structure
 *
-* @member nodeIndex :  index of the Catenis node.
-* @member nodename  :  name of the Catenis node.
-* @member nodeInfo  :  short description about the Catenis node.
+* @member index :  index of the Catenis node.
+* @member name  :  name of the Catenis node.
+* @member description  :  short description about the Catenis node.
 */
 struct CatenisNodeInfo
 {
@@ -421,8 +401,8 @@ struct CatenisNodeInfo
 	std::string name;
 	std::string description;
 
-	CatenisNodeInfo(int node_index, std::string node_name, std::string node_info)
-		: index(node_index), name(node_name), description(node_info) {}
+	CatenisNodeInfo(int node_index, std::string node_name, std::string node_description)
+		: index(node_index), name(node_name), description(node_description) {}
 	~CatenisNodeInfo() {}
 };
 
@@ -497,8 +477,6 @@ public:
      * @param[in] message : The messsage to store
      * @param[in] option (optional) :  Options to log message
      *
-     * @return true if no error has occured.
-     *
      * @see ctn::LogMessageResult
      * @see ctn::MessageOptions
      */
@@ -511,8 +489,6 @@ public:
      * @param[in] device : Device that receives message
      * @param[in] message : The messsage to send
      * @param[in] option (optional) :  Options to send message
-     *
-     * @return true if no error has occured.
      *
      * @see ctn::SendMessageResult
      * @see ctn::Device
@@ -528,8 +504,6 @@ public:
      * @param[in] encoding (optional, default: "utf8") :  The encoding that should be used for the returned message
      * ["utf8"|"base64"|"hex"]
      *
-     * @return true if no error has occured.
-     *
      * @see ctn::ReadMessageResult
      *
      */
@@ -540,8 +514,6 @@ public:
      *
      * @param[out] data : The data to parse response into
      * @param[in] message_id : ID of message to retrieve container info
-     *
-     * @return true if no error has occured.
      *
      * @see ctn::RetrieveMessageContainer
      *
@@ -565,8 +537,6 @@ public:
      * @param[in] start_date (optional) : ISO 8601 formatted date and time specifying the lower boundary
      * @param[in] end_date (optional) : ISO 8601 formatted date and time specifying the upper boundary
      *
-     * @return true if no error has occured.
-     *
      * @see ctn::ListMessagesResult
      *
      */
@@ -577,22 +547,17 @@ public:
 	*
 	* @param[out] data : The data to parse response into
 	*
-	* @return true if no error has occured.
-	*
 	* @see ctn::ListPermissionEventsResult
 	*
 	*/
 	void listPermissionEvents(ListPermissionEventsResult &data);
-
 
 	/*
 	* Retrieve Permission Rights
 	*
 	* @param[out] data : The data to parse response into
 	*
-	* @param[in] event name : Name of the permission event to lookup
-	*
-	* @return true if no error has occured.
+	* @param[in] eventName : Name of the permission event to lookup
 	*
 	* @see ctn::RetrievePermissionRightsResult
 	*
@@ -604,23 +569,23 @@ public:
 	*
 	* @param[out] data : The data to parse response into
 	*
-	* @param[in] event name : Name of the permission event to lookup
-	*
-	* @param[in] requestObj : A JSON containing the Catenis Nodes, Clients, and Devices and the rights assigned to them
-	*
-	* @return true if no error has occured.
+	* @param[in] eventName : Name of the permission event to lookup
+	* @param[in] systemRight : The permission right at the system level to set
+	* @param[in] cntNodesRights : The permission rights at the Catenis node level to set
+	* @param[in] clientRights : The permission rights at the client level to set
+	* @param[in] deviceRights : The permission rights at the device level to set
 	*
 	* @see ctn::SetPermissionRightsResult
 	*
 	*/
-	void setPermissionRights(SetPermissionRightsResult &data, std::string eventName, std::string system, std::shared_ptr<SetRightsCtnNode> cntNodesObj, std::shared_ptr<SetRightsClient> clientObj, std::shared_ptr<SetRightsDevice> deviceObj);
+	void setPermissionRights(SetPermissionRightsResult &data, std::string eventName, std::string systemRight, SetRightsCtnNode *cntNodesRights, SetRightsClient *clientRights, SetRightsDevice *deviceRights);
 
 	/*
 	* List Notification Events
 	*
 	* @param[out] data : The data to parse response into
 	*
-	* @return true if no error has occured.
+	* @return true if no error has occurred.
 	*
 	* @see ctn::ListNotificationEventsResult
 	*
@@ -636,30 +601,30 @@ public:
 	*
 	* @param[in] deviceId   : ID of the virtual device the permission right applied to which should be retrieved. 
 	*
-	* @param[in] isProdUniqueId   : Flag indicating ehether the supplied ID is a product unique ID (false as default)
+	* @param[in] isProdUniqueId   : Flag indicating whether the supplied ID is a product unique ID (false as default)
 	*
-	* @return true if no error has occured.
+	* @return true if no error has occurred.
 	*
 	* @see ctn::CheckEffectivePermissionRightResult
 	*
 	*/
-	void checkEffectivePermissionRight(CheckEffectivePermissionRightResult &data, std::string eventName, std::string deviceId, std::string isProdUniqueId);
+	void checkEffectivePermissionRight(CheckEffectivePermissionRightResult &data, std::string eventName, Device device);
 
 	/*
-	* Retrive Device Identification Info
+	* Retrieve Device Identification Info
 	*
 	* @param[out] data : The data to parse response into
 	*
 	* @param[in] deviceId   : ID of the virtual device the permission right applied to which should be retrieved.
 	*
-	* @param[in] isProdUniqueId   : Flag indicating ehether the supplied ID is a product unique ID (false as default)
+	* @param[in] isProdUniqueId   : Flag indicating whether the supplied ID is a product unique ID (false as default)
 	*
-	* @return true if no error has occured.
+	* @return true if no error has occurred.
 	*
 	* @see ctn::DeviceIdInfoResult
 	*
 	*/
-	void retrieveDeviceIdInfo(DeviceIdInfoResult &data, std::string deviceId, std::string isProdUniqueId);
+	void retrieveDeviceIdInfo(DeviceIdInfoResult &data, Device device);
 };
 
 }

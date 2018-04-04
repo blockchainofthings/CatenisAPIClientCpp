@@ -14,21 +14,21 @@ set(CMAKE_SHARED_LINKER_FLAGS "-w")
 
 # Add Lib utils for merging static libs
 include("cmake/MergeStaticLibs.cmake")
-# Set 3rd part lib build type to make final lib minimal
-set(HUNTER_CONFIGURATION_TYPES Release)
+
+# Use default setting for HUNTER_CONFIGURATION_TYPES so both Debug and Release versions of 3rd part libraries are built
 
 # Add hunter to manage external libs
 include("cmake/HunterGate.cmake")
 if ("${COM_SUPPORT_LIB}" STREQUAL "BOOST_ASIO")
     HunterGate(
-            URL "https://github.com/ruslo/hunter/archive/v0.20.14.tar.gz"
-            SHA1 "18cdbf5c47abdda437c73bf5437b7c3c65afe47c"
+            URL "https://github.com/ruslo/hunter/archive/v0.20.34.tar.gz"
+            SHA1 "2f04d1beffdf39db1c40d8347beb8c10bbe9b8ed"
             FILEPATH "${CMAKE_SOURCE_DIR}/cmake/HunterConfig_BoostAsio.cmake"
     )
 elseif ("${COM_SUPPORT_LIB}" STREQUAL "POCO")
     HunterGate(
-            URL "https://github.com/ruslo/hunter/archive/v0.20.14.tar.gz"
-            SHA1 "18cdbf5c47abdda437c73bf5437b7c3c65afe47c"
+            URL "https://github.com/ruslo/hunter/archive/v0.20.34.tar.gz"
+            SHA1 "2f04d1beffdf39db1c40d8347beb8c10bbe9b8ed"
             FILEPATH "${CMAKE_SOURCE_DIR}/cmake/HunterConfig_Poco.cmake"
     )
 endif()
