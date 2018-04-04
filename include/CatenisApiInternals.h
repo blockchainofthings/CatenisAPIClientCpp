@@ -84,6 +84,12 @@ public:
     void parseReadMessage(ReadMessageResult &user_return_data, std::string json_data);
     void parseRetrieveMessageContainer(RetrieveMessageContainerResult &user_return_data, std::string json_data);
     void parseListMessages(ListMessagesResult &user_return_data, std::string json_data);
+    void parseListPermissionEvents(ListPermissionEventsResult &user_return_data, std::string json_data);
+    void parseRetrievePermissionRights(RetrievePermissionRightsResult &user_return_data, std::string json_data);
+    void parseSetPermissionRights(SetPermissionRightsResult &user_return_data, std::string json_data);
+    void parseListNotificationEvents(ListNotificationEventsResult &user_return_data, std::string json_data);
+    void parseCheckEffectivePermissionRight(CheckEffectivePermissionRightResult &user_return_data, std::string json_data);
+    void parseRetrieveDeviceIdInfo(DeviceIdInfoResult &user_return_data, std::string json_data);
 };
 
 }

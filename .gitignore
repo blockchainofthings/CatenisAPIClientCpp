@@ -43,3 +43,8 @@ _builds/
 # CLion
 .idea
 cmake-build-*
+
+# Visual Studio Generated Files
+CMakeSettings.json
+*.vcxproj
+.vs/

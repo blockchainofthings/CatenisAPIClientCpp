@@ -95,7 +95,7 @@ catch (ctn::CatenisAPIException &errObject) {
 
 ### Sending a message to another device
 
-```shell
+```cpp
 // Define target virtual device
 ctn::Device targetDevice(target_device_id)
 
@@ -116,7 +116,7 @@ catch (ctn::CatenisAPIException &errObject) {
 
 ### Reading a message
 
-```shell
+```cpp
 // Define structure to receive returned data
 ctn::ReadMessageResult data;
 
@@ -131,7 +131,7 @@ catch (ctn::CatenisAPIException &errObject) {
 
 ### Retrieving information about a message's container
 
-```shell
+```cpp
 // Define structure to receive returned data
 ctn::RetrieveMessageContainerResult data;
 
@@ -146,7 +146,7 @@ catch (ctn::CatenisAPIException &errObject) {
 
 ### List messages
 
-```shell
+```cpp
 // Define structure to receive returned data
 ctn::ListMessagesResult data;
 
