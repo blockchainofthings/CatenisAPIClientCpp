@@ -75,8 +75,6 @@ ctn::CtnApiClient ctnApiClient(device_id, api_access_secret, "catenis.io", "", "
 
 ### Logging (storing) a message to the blockchain
 
-Use the pre-created method option.
-
 ```cpp
 // Define message options - encoding: utf8, encrypt: true, storage: embedded
 ctn::MessageOptions msgOpts("utf8", true, "embedded");
@@ -86,7 +84,9 @@ ctn::LogMessageResult data;
 
 try {
     // Call the API method
-    client.logMessage(data, message, msgOpts);
+    ctnApiClient.logMessage(data, "My message", msgOpts);
+    
+    std::cout << "ID of logged message: " << data.messageId << std::endl;
 }
 catch (ctn::CatenisAPIException &errObject) {
     std::cerr << errObject.getErrorDescription() << std::endl;
@@ -107,7 +107,9 @@ ctn::SendMessageResult data;
 
 try {
     // Call the API method
-    client.sendMessage(data, message, targetDevice, msgOpts);
+    ctnApiClient.sendMessage(data, targetDevice, "My message to send", msgOpts);
+    
+    std::cout << "ID of sent message: " << data.messageId << std::endl;
 }
 catch (ctn::CatenisAPIException &errObject) {
     std::cerr << errObject.getErrorDescription() << std::endl;
@@ -122,7 +124,15 @@ ctn::ReadMessageResult data;
 
 try {
     // Call the API method
-    client.readMessage(data, message_id, "utf8");
+    ctnApiClient.readMessage(data, message_id, "utf8");
+    
+    std::cout << "Message read: " << data.message << endl;
+
+    if (data.action == "send"} {
+        std::cout << "Message originally from: device ID: " << data.from->deviceId
+            << (!data.from->name.empty() ? std::string(", name: ") + data.from->name : std::string(""))
+            << (!data.from->prodUniqueId.empty() ? std::string(", product unique ID: ") + data.from->prodUniqueId : std::string(""));
+    }
 }
 catch (ctn::CatenisAPIException &errObject) {
     std::cerr << errObject.getErrorDescription() << std::endl;
@@ -137,14 +147,20 @@ ctn::RetrieveMessageContainerResult data;
 
 try {
     // Call the API method
-    client.retrieveMessageContainer(data, message_id);
+    ctnApiClient.retrieveMessageContainer(data, message_id);
+    
+    std::cout << "ID of blockchain transaction containing the message: " << data.blockchain.txid << endl;
+
+    if (data.externalStorage != nullptr) {
+       std::cout << "IPFS reference to message: " << (*data.externalStorage)["ipfs"] << endl;
+    }
 }
 catch (ctn::CatenisAPIException &errObject) {
     std::cerr << errObject.getErrorDescription() << std::endl;
 }
 ```
 
-### List messages
+### Listing messages
 
 ```cpp
 // Define structure to receive returned data
@@ -152,7 +168,239 @@ ctn::ListMessagesResult data;
 
 try {
     // Call the API method - list unread messages received since January 1st, 2018
-    client.listMessages(data, "send", "inbound", "", "", "", "", "unread", "2018-01-01T00:00:00Z");
+    ctnApiClient.listMessages(data, "send", "inbound", "", "", "", "", "unread", "2018-01-01T00:00:00Z");
+
+    int msgCounter = 0;
+
+    for (auto it = data.messageList.begin(); it != data.messageList.end(); it++) {
+        std::cout << "Message #" << ++msgCounter << ":" << std::endl;
+
+        std::shared_ptr<ctn::MessageDescription> msgDesc = *it;
+
+        std::cout << "  message ID: " << msgDesc->messageId << std::endl;
+        std::cout << "  action: " << msgDesc->action << std::endl;
+
+        if (msgDesc->action == "send") {
+            std::cout << "  direction: " << msgDesc->direction << std::endl;
+
+            if (msgDesc->direction == "inbound") {
+                std::cout << "  from device ID: " << msgDesc->from->deviceId << std::endl;
+            }
+
+            if (msgDesc->direction == "outbound") {
+                std::cout << "  to device ID: " << msgDesc->to->deviceId << std::endl;
+            }
+
+            if (msgDesc->readConfirmationEnabled != nullptr) {
+                std::cout << "  read confirmation enabled: " << (*(msgDesc->readConfirmationEnabled) ? "true" : "false") << std::endl;
+            }
+        }
+
+        if (msgDesc->read != nullptr) {
+            std::cout << "  message read: " << (*(msgDesc->read) ? "true" : "false") << std::endl;
+        }
+
+        std::cout << "  Date " << (msgDesc->action == "log" ? "logged: " : (msgDesc->direction == "inbound" ? "received: " : "sent: ")) << msgDesc->date << std::endl;
+    }
+
+    if (data.countExceeded) {
+        std::cout << "Warning: not all messages fulfilling search criteria have been returned!" << std::endl;
+    }
+}
+catch (ctn::CatenisAPIException &errObject) {
+    std::cerr << errObject.getErrorDescription() << std::endl;
+}
+```
+
+### Listing system defined permission events
+
+```cpp
+// Define structure to receive returned data
+ctn::ListPermissionEventsResult data;
+
+try {
+    // Call the API method
+    ctnApiClient.listPermissionEvents(data);
+
+    for (auto it = data.permissionEvents.begin(); it != data.permissionEvents.end(); it++) {
+        std::cout << "Event name: " << it->first << "; event description: " << it->second << std::endl;
+    }
+}
+catch (ctn::CatenisAPIException &errObject) {
+    std::cerr << errObject.getErrorDescription() << std::endl;
+}
+```
+
+### Retrieving permission rights currently set for a specified permission event
+
+```cpp
+// Define structure to receive returned data
+ctn::RetrievePermissionRightsResult data;
+
+try {
+    // Call the API method
+    ctnApiClient.retrievePermissionRights(data, "receive-msg");
+
+    std::cout << "Default (system) permission right: " << data.system << std::endl;
+
+    if (data.catenisNode != nullptr) {
+        if (data.catenisNode->allowed.size() > 0) {
+            std::cout << "Index of Catenis nodes with 'allow' permission right:" << std::endl;
+            
+            for (auto i = data.catenisNode->allowed.begin(); i != data.catenisNode->allowed.end(); ++i) {
+                std::cout << "  - " << *i << std::endl;
+            }
+        }
+
+        if (data.catenisNode->denied.size() > 0) {
+            std::cout << "Index of Catenis nodes with 'deny' permission right:" << std::endl;
+            
+            for (auto i = data.catenisNode->denied.begin(); i != data.catenisNode->denied.end(); ++i) {
+                std::cout << "  - " << *i << std::endl;
+            }
+        }
+    }
+
+    if (data.client != nullptr) {
+        if (data.client->allowed.size() > 0) {
+            std::cout << "ID of clients with 'allow' permission right:" << std::endl;
+            
+            for (auto i = data.client->allowed.begin(); i != data.client->allowed.end(); ++i) {
+                std::cout << "  - " << *i << std::endl;
+            }
+        }
+
+        if (data.client->denied.size() > 0) {
+            std::cout << "ID of clients with 'deny' permission right:" << std::endl;
+            
+            for (auto i = data.client->denied.begin(); i != data.client->denied.end(); ++i) {
+                std::cout << "  - " << *i << std::endl;
+            }
+        }
+    }
+
+    if (data.device != nullptr) {
+        if (data.device->allowed.size() > 0) {
+            std::cout << "ID of devices with 'allow' permission right:" << std::endl;
+            
+            for (auto i = data.device->allowed.begin(); i != data.device->allowed.end(); ++i) {
+                std::cout << "  - " << (*i)->deviceId << std::endl;
+            }
+        }
+
+        if (data.device->denied.size() > 0) {
+            std::cout << "ID of devices with 'deny' permission right:" << std::endl;
+            
+            for (auto i = data.device->denied.begin(); i != data.device->denied.end(); ++i) {
+                std::cout << "  - " << (*i)->deviceId << std::endl;
+            }
+        }
+    }
+}
+catch (ctn::CatenisAPIException &errObject) {
+    std::cerr << errObject.getErrorDescription() << std::endl;
+}
+```
+
+### Setting permission rights at different levels for a specified permission event
+
+```cpp
+ctn::SetRightsCtnNode ctnNodeRights;
+ctnNodeRights.allowed.push_back(std::string("self"));
+
+ctn::SetRightsClient clientRights;
+clientRights.allowed.push_back(std::string("self"));
+clientRights.allowed.push_back(std::string(clientId));
+
+ctn::SetRightsDevice deviceRights;
+deviceRights.denied.push_back(ctn::Device(deviceId));
+deviceRights.denied.push_back(ctn::Device("ABCD001", true));
+
+try {
+    // Call the API method
+    ctnApiClient.setPermissionRights(data, "receive-msg", "deny", &ctnNodeRights, &clientRights, &deviceRights);
+    
+    std::cout << "Permission rights successfully set" << std::endl;
+}
+catch (ctn::CatenisAPIException &errObject) {
+    std::cerr << errObject.getErrorDescription() << std::endl;
+}
+```
+
+### Checking effective permission right applied to a given device for a specified permission event
+
+```cpp
+// Define structure to receive returned data
+ctn::CheckEffectivePermissionRightResult data;
+
+try {
+    // Call the API method
+    ctnApiClient.checkEffectivePermissionRight(data, "receive-msg", ctn::Device(deviceId));
+
+    std::cout << "Effective right for device " << data.effectivePermissionRight.begin()->first << ": " << data.effectivePermissionRight.begin()->second << std::endl;
+}
+catch (ctn::CatenisAPIException &errObject) {
+    std::cerr << errObject.getErrorDescription() << std::endl;
+}
+```
+
+### Retrieving identification information of a given device
+
+```cpp
+// Define structure to receive returned data
+ctn::DeviceIdInfoResult data;
+
+try {
+    // Call the API method
+    ctnApiClient.retrieveDeviceIdInfo(data, ctn::Device(deviceId));
+
+    std::cout << "Device\'s Catenis node info:" << std::endl;
+    std::cout << "  index: " << data.catenisNode->index << std::endl;
+
+    if (!data.catenisNode->name.empty()) {
+        std::cout << "  name: " << data.catenisNode->name << std::endl;
+    }
+
+    if (!data.catenisNode->description.empty()) {
+        std::cout << "  description: " << data.catenisNode->description << std::endl;
+    }
+
+    std::cout << "Device\'s client info:" << std::endl;
+    std::cout << "  clientId: " << data.client->clientId << std::endl;
+
+    if (!data.device->name.empty()) {
+        std::cout << "  name: " << data.client->name << std::endl;
+    }
+
+    std::cout << "Device\'s own info:" << std::endl;
+    std::cout << "  deviceId: " << data.device->deviceId << std::endl;
+
+    if (!data.device->name.empty()) {
+        std::cout << "  name: " << data.device->name << std::endl;
+    }
+
+    if (!data.device->prodUniqueId.empty()) {
+        std::cout << "  prodUniqueId: " << data.device->prodUniqueId << std::endl;
+    }
+}
+catch (ctn::CatenisAPIException &errObject) {
+    std::cerr << errObject.getErrorDescription() << std::endl;
+}
+```
+
+### Listing system defined notification events
+
+```cpp
+// Define structure to receive returned data
+ctn::ListNotificationEventsResult data;
+
+try {
+    // Call the API method
+    ctnApiClient.listNotificationEvents(data);
+
+    for (auto it = data.notificationEvents.begin(); it != data.notificationEvents.end(); it++) {
+        std::cout << "Event name: " << it->first << "; event description: " << it->second << std::endl;
+    }
 }
 catch (ctn::CatenisAPIException &errObject) {
     std::cerr << errObject.getErrorDescription() << std::endl;

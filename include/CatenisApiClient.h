@@ -295,13 +295,6 @@ struct SetRightsDevice
     std::list<Device> allowed;
     std::list<Device> denied;
     std::list<Device> none;
-
-    SetRightsDevice(
-        std::list<Device> &allowedDevices,
-        std::list<Device> &deniedDevices,
-        std::list<Device> &noneDevices)
-        : allowed(allowedDevices), denied(deniedDevices), none(noneDevices) {}
-    ~SetRightsDevice() {}
 };
 
 /*
@@ -317,14 +310,6 @@ struct SetRightsCtnNode
     std::list<std::string> allowed;
     std::list<std::string> denied;
     std::list<std::string> none;
-
-
-    SetRightsCtnNode(
-        std::list<std::string> allowedCtnNodes,
-        std::list<std::string> deniedCtnNodes,
-        std::list<std::string> noneCtnNodes)
-        : allowed(allowedCtnNodes), denied(deniedCtnNodes), none(noneCtnNodes) {}
-    ~SetRightsCtnNode() {}
 };
 
 /*
@@ -340,13 +325,6 @@ struct SetRightsClient
     std::list<std::string> allowed;
     std::list<std::string> denied;
     std::list<std::string> none;
-
-    SetRightsClient(
-        std::list<std::string> allowedClients,
-        std::list<std::string> deniedClients,
-        std::list<std::string> noneClients)
-        : allowed(allowedClients), denied(deniedClients), none(noneClients) {}
-    ~SetRightsClient() {}
 };
 
 // Dictionary holding Set Permission Rights description result

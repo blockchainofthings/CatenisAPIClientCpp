@@ -66,7 +66,8 @@ int main(int argc, char* argv[])
         return 1;
     }
     
-    ctn::CtnApiClient client(argv[1], argv[2], "catenis.io", "", "beta");
+    //ctn::CtnApiClient client(argv[1], argv[2], "catenis.io", "", "beta");
+    ctn::CtnApiClient client(argv[1], argv[2], "localhost", "3000", "prod", false);
 
     showUsage();
 
@@ -480,11 +481,7 @@ int main(int argc, char* argv[])
                 CheckEffectivePermissionRightResult data;
                 client.checkEffectivePermissionRight(data,eventName, Device(deviceId, isProdUniqueId));
 
-                for (auto it = data.effectivePermissionRight.begin(); it != data.effectivePermissionRight.end(); it++)
-                {
-                    cout << "Permission right for device (\"" << it->first << "\"): " << it->second << std::endl;
-                }
-
+                cout << "Permission right for device (\"" << data.effectivePermissionRight.begin()->first << "\"): " << data.effectivePermissionRight.begin()->second << std::endl;
             }
             catch (CatenisAPIException &errObject)
             {
@@ -514,40 +511,31 @@ int main(int argc, char* argv[])
                 client.retrieveDeviceIdInfo(data, Device(deviceId, isProdUniqueId));
 
                 // Print out CatenisNodeInfo
-                if (data.catenisNode != nullptr)
-                {
-                    cout << "Catenis node:" << std::endl;
-                    cout << "  index: " << data.catenisNode->index << endl;
+                cout << "Catenis node:" << std::endl;
+                cout << "  index: " << data.catenisNode->index << endl;
 
-                    if (!data.catenisNode->name.empty())
-                        cout << "  name: " << data.catenisNode->name << endl;
+                if (!data.catenisNode->name.empty())
+                    cout << "  name: " << data.catenisNode->name << endl;
 
-                    if (!data.catenisNode->description.empty())
-                        cout << "  description: " << data.catenisNode->description << endl;
-                }
+                if (!data.catenisNode->description.empty())
+                    cout << "  description: " << data.catenisNode->description << endl;
 
                 // Print out ClientInfo
-                if (data.client != nullptr)
-                {
-                    cout << "\nClient:" << std::endl;
-                    cout << "  clientId: " << data.client->clientId << endl;
+                cout << "\nClient:" << std::endl;
+                cout << "  clientId: " << data.client->clientId << endl;
 
-                    if (!data.device->name.empty())
-                        cout << "  name: " << data.client->name << endl;
-                }
+                if (!data.device->name.empty())
+                    cout << "  name: " << data.client->name << endl;
 
                 // Print out DeviceInfo
-                if (data.device != nullptr)
-                {
-                    cout << "\nDevice:" << endl;
-                    cout << "  deviceId: " << data.device->deviceId << endl;
+                cout << "\nDevice:" << endl;
+                cout << "  deviceId: " << data.device->deviceId << endl;
 
-                    if (!data.device->name.empty())
-                        cout << "  name: " << data.device->name << endl;
+                if (!data.device->name.empty())
+                    cout << "  name: " << data.device->name << endl;
 
-                    if (!data.device->prodUniqueId.empty())
-                        cout << "  prodUniqueId: " << data.device->prodUniqueId << endl;
-                }
+                if (!data.device->prodUniqueId.empty())
+                    cout << "  prodUniqueId: " << data.device->prodUniqueId << endl;
             }
             catch (CatenisAPIException &errObject)
             {
@@ -563,20 +551,17 @@ int main(int argc, char* argv[])
             string eventName;
             isCmdLine >> eventName;
 
-            /*// Empty input stream
-            string null;
-            std::getline(cin, null);*/
-
             // ------ SYSTEM LEVEL
             cout << "Enter system right (allow/deny): ";
             string systemRight;
             std::getline(cin, systemRight);
 
             // ------ CATENIS NODE LEVEL
+            SetRightsCtnNode ctnNodeRights;
+
             cout << "Enter Catenis nodes (indices) to allow: ";
             string strAllowedCtnNodes;
             std::getline(cin, strAllowedCtnNodes);
-            std::list<string> allowedCtnNodes;
 
             if (!strAllowedCtnNodes.empty()) {
                 std::istringstream is(strAllowedCtnNodes);
@@ -584,14 +569,13 @@ int main(int argc, char* argv[])
                 while (!is.eof()) {
                     string ctnNodeIndex;
                     is >> ctnNodeIndex;
-                    allowedCtnNodes.push_back(ctnNodeIndex);
+                    ctnNodeRights.allowed.push_back(ctnNodeIndex);
                 }
             }
 
             cout << "Enter Catenis nodes (indices) to deny: ";
             string strDeniedCtnNodes;
             std::getline(cin, strDeniedCtnNodes);
-            std::list<string> deniedCtnNodes;
 
             if (!strDeniedCtnNodes.empty()) {
                 std::istringstream is(strDeniedCtnNodes);
@@ -599,14 +583,13 @@ int main(int argc, char* argv[])
                 while (!is.eof()) {
                     string ctnNodeIndex;
                     is >> ctnNodeIndex;
-                    deniedCtnNodes.push_back(ctnNodeIndex);
+                    ctnNodeRights.denied.push_back(ctnNodeIndex);
                 }
             }
 
             cout << "Enter Catenis nodes (indices) to clear right setting: ";
             string strNoneCtnNodes;
             std::getline(cin, strNoneCtnNodes);
-            std::list<string> noneCtnNodes;
 
             if (!strNoneCtnNodes.empty()) {
                 std::istringstream is(strNoneCtnNodes);
@@ -614,15 +597,16 @@ int main(int argc, char* argv[])
                 while (!is.eof()) {
                     string ctnNodeIndex;
                     is >> ctnNodeIndex;
-                    noneCtnNodes.push_back(ctnNodeIndex);
+                    ctnNodeRights.none.push_back(ctnNodeIndex);
                 }
             }
 
             // ------ CLIENT LEVEL
+            SetRightsClient clientRights;
+
             cout << "Enter clients (IDs) to allow: ";
             string strAllowedClients;
             std::getline(cin, strAllowedClients);
-            std::list<string> allowedClients;
 
             if (!strAllowedClients.empty()) {
                 std::istringstream is(strAllowedClients);
@@ -630,14 +614,13 @@ int main(int argc, char* argv[])
                 while (!is.eof()) {
                     string clientId;
                     is >> clientId;
-                    allowedClients.push_back(clientId);
+                    clientRights.allowed.push_back(clientId);
                 }
             }
 
             cout << "Enter clients (IDs) to deny: ";
             string strDeniedClients;
             std::getline(cin, strDeniedClients);
-            std::list<string> deniedClients;
 
             if (!strDeniedClients.empty()) {
                 std::istringstream is(strDeniedClients);
@@ -645,14 +628,13 @@ int main(int argc, char* argv[])
                 while (!is.eof()) {
                     string clientId;
                     is >> clientId;
-                    deniedClients.push_back(clientId);
+                    clientRights.denied.push_back(clientId);
                 }
             }
 
             cout << "Enter clients (IDs) to clear right setting: ";
             string strNoneClients;
             std::getline(cin, strNoneClients);
-            std::list<string> noneClients;
 
             if (!strNoneClients.empty()) {
                 std::istringstream is(strNoneClients);
@@ -660,15 +642,16 @@ int main(int argc, char* argv[])
                 while (!is.eof()) {
                     string clientId;
                     is >> clientId;
-                    noneClients.push_back(clientId);
+                    clientRights.none.push_back(clientId);
                 }
             }
 
             // ------ DEVICE LEVEL
+            SetRightsDevice deviceRights;
+
             cout << "Enter devices (IDs) to allow (precede product unique ID with %): ";
             string strAllowedDevices;
             std::getline(cin, strAllowedDevices);
-            std::list<Device> allowedDevices;
 
             if (!strAllowedDevices.empty()) {
                 std::istringstream is(strAllowedDevices);
@@ -684,14 +667,13 @@ int main(int argc, char* argv[])
                         isProdUniqueId = true;
                     }
 
-                    allowedDevices.push_back(Device(deviceId, isProdUniqueId));
+                    deviceRights.allowed.push_back(Device(deviceId, isProdUniqueId));
                 }
             }
 
             cout << "Enter devices (IDs) to deny (precede product unique ID with %): ";
             string strDeniedDevices;
             std::getline(cin, strDeniedDevices);
-            std::list<Device> deniedDevices;
 
             if (!strDeniedDevices.empty()) {
                 std::istringstream is(strDeniedDevices);
@@ -707,14 +689,13 @@ int main(int argc, char* argv[])
                         isProdUniqueId = true;
                     }
 
-                    deniedDevices.push_back(Device(deviceId, isProdUniqueId));
+                    deviceRights.denied.push_back(Device(deviceId, isProdUniqueId));
                 }
             }
 
             cout << "Enter devices (IDs) to clear right setting (precede product unique ID with %): ";
             string strNoneDevices;
             std::getline(cin, strNoneDevices);
-            std::list<Device> noneDevices;
 
             if (!strNoneDevices.empty()) {
                 std::istringstream is(strNoneDevices);
@@ -730,18 +711,11 @@ int main(int argc, char* argv[])
                         isProdUniqueId = true;
                     }
 
-                    noneDevices.push_back(Device(deviceId, isProdUniqueId));
+                    deviceRights.none.push_back(Device(deviceId, isProdUniqueId));
                 }
             }
 
             cout << endl;
-
-            /*
-            * Store Permission Right Containers into appropriate structure
-            */
-            SetRightsCtnNode ctnNodeRights(allowedCtnNodes, deniedCtnNodes, noneCtnNodes);
-            SetRightsClient clientRights(allowedClients, deniedClients, noneClients);
-            SetRightsDevice deviceRights(allowedDevices, deniedDevices, noneDevices);
 
             /*
             * Execute the Set Permission Right Command / and output the response
