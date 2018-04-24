@@ -35,6 +35,7 @@ void showUsage() {
     cout << "    listNotificationEvents" << endl;
     cout << "    checkEffectivePermissionRight <event_name> <deviceId> [<isProdUniqueId>]" << endl;
     cout << "    retrieveDeviceIdInfo <deviceId> [<isProdUniqueId>]" << endl;
+	cout << "    wsOpenNotificationChannel" << endl;
     cout << "    help" << endl;
     cout << "    exit" << endl;
 }
@@ -733,6 +734,25 @@ int main(int argc, char* argv[])
             catch (...)
             {
                 std::cerr << "Unknown error encountered: call to client.setPermissionRights." << std::endl;
+            }
+        }
+        else if (method == "wsOpenNotificationChannel")
+        {
+            try
+            {
+                std::string data;
+                std::string eventName = "receive-msg";
+                std::string text = "This is a test";
+                client.wsOpenNotificationChannel(data,eventName);
+                cout << "Notification Channel Open Response (" << data << ") " << std::endl;
+            }
+            catch (CatenisAPIException &errObject)
+            {
+                std::cerr << errObject.getErrorDescription() << std::endl;
+            }
+            catch (...)
+            {
+                std::cerr << "Unknown error encountered: call to client.wsOpenNotificationChannel." << std::endl;
             }
         }
         else if (method == "help") {

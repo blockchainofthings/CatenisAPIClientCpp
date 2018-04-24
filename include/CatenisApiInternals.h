@@ -90,6 +90,8 @@ public:
     void parseListNotificationEvents(ListNotificationEventsResult &user_return_data, std::string json_data);
     void parseCheckEffectivePermissionRight(CheckEffectivePermissionRightResult &user_return_data, std::string json_data);
     void parseRetrieveDeviceIdInfo(DeviceIdInfoResult &user_return_data, std::string json_data);
+
+	void parseWSOpenNotificationChannel(std::string &user_return_data, std::string json_data);
 };
 
 }

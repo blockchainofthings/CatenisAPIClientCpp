@@ -603,6 +603,14 @@ public:
     *
     */
     void retrieveDeviceIdInfo(DeviceIdInfoResult &data, Device device);
+
+
+	/*
+	* Websocket Open Notification Channel
+	*
+	*
+	*/
+	void wsOpenNotificationChannel(std::string &data, std::string eventName);
 };
 
 }

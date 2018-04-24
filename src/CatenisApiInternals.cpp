@@ -26,6 +26,7 @@
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
+#include <boost/beast/websocket.hpp>
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/error.hpp>
@@ -38,6 +39,7 @@
 using boost::asio::ip::tcp;
 namespace http = boost::beast::http;
 namespace ssl = boost::asio::ssl;
+namespace websocket = boost::beast::websocket;
 #elif defined(COM_SUPPORT_LIB_POCO)
 #include <Poco/JSON/Object.h>
 #include <Poco/JSON/Stringifier.h>
@@ -1462,4 +1464,44 @@ void ctn::CtnApiInternals::parseRetrieveDeviceIdInfo(DeviceIdInfoResult &user_re
     catch (...) {
         throw CatenisClientError("Unexpected returned data from Retrive Device ID Information API method");
     }
+}
+
+// Private Method.
+void ctn::CtnApiInternals::parseWSOpenNotificationChannel(std::string &user_return_data, std::string json_data)
+{
+	try {
+#if defined(COM_SUPPORT_LIB_BOOST_ASIO)
+		json_spirit::mValue result;
+		json_spirit::read_string_or_throw(json_data, result);
+
+		json_spirit::mObject &retObj = result.get_obj();
+
+		std::string const &status = retObj["status"].get_str();
+#elif defined(COM_SUPPORT_LIB_POCO)
+		Poco::JSON::Parser parser;
+		Poco::Dynamic::Var result = parser.parse(json_data);
+
+		Poco::JSON::Object::Ptr retObj = result.extract<Poco::JSON::Object::Ptr>();
+
+		std::string status = retObj->getValue<std::string>("status");
+#endif
+
+		if (status == "success") {
+#if defined(COM_SUPPORT_LIB_BOOST_ASIO)
+			json_spirit::mObject &data = retObj["data"].get_obj();
+
+
+#elif defined(COM_SUPPORT_LIB_POCO)
+			Poco::JSON::Object::Ptr data = retObj->getObject("data");
+
+
+#endif
+		}
+		else {
+			throw CatenisClientError("Unexpected returned data from List Notification Events API method");
+		}
+	}
+	catch (...) {
+		throw CatenisClientError("Unexpected returned data from List Notification Events API method");
+	}
 }

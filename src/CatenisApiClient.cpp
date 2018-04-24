@@ -12,6 +12,14 @@
 
 #if defined(COM_SUPPORT_LIB_BOOST_ASIO)
 #include <json-spirit/json_spirit_value.h>
+
+#include <boost/beast/core.hpp>
+#include <boost/beast/websocket.hpp>
+#include <boost/asio/connect.hpp>
+#include <boost/asio/ip/tcp.hpp>
+using tcp = boost::asio::ip::tcp;               // from <boost/asio/ip/tcp.hpp>
+namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.hpp>
+
 #elif defined(COM_SUPPORT_LIB_POCO)
 #include <Poco/JSON/Object.h>
 #endif
@@ -19,6 +27,8 @@
 #include <CatenisApiException.h>
 #include <CatenisApiInternals.h>
 #include <CatenisApiClient.h>
+
+
 
 
 // API Method: Log Message
@@ -579,6 +589,80 @@ void ctn::CtnApiClient::retrieveDeviceIdInfo(DeviceIdInfoResult &data, Device de
     std::string http_return_data;
     this->internals_->httpRequest("GET", "devices/:deviceId", params, queries, request_data, http_return_data);
     this->internals_->parseRetrieveDeviceIdInfo(data, http_return_data);
+}
+
+// API Method: Websockets - Open a notification channel with Catenis Server
+void ctn::CtnApiClient::wsOpenNotificationChannel(std::string &data, std::string eventName)
+{
+	std::map<std::string, std::string> params;
+	std::map<std::string, std::string> queries;
+
+	params[":eventName"] = eventName;
+
+#if defined(COM_SUPPORT_LIB_BOOST_ASIO)
+	json_spirit::mObject objData;
+	objData["x-bcot-timestamp"] = "20180219T223932Z";
+	objData["authorization"] = "CTN1-HMAC-SHA256 Credential=dmM2Dz32agLSGsSuoxsR/20180219/ctn1_request, Signature=59b44f3d504b272e92c1f96694b7f6abb39b8cb7726ffe8b57d2cb46aedf568b";
+	//json_spirit::mValue request_authorization(objData);
+	std::string request_authorization = "{\"x-bcot-timestamp\":\"20180219T223932Z\"},{\"authorization\":\"CTN1-HMAC-SHA256 Credential=dmM2Dz32agLSGsSuoxsR/20180219/ctn1_request, Signature=59b44f3d504b272e92c1f96694b7f6abb39b8cb7726ffe8b57d2cb46aedf568b\"}";
+	
+	json_spirit::mValue request_data;
+#elif defined(COM_SUPPO;RT_LIB_POCO)
+	Poco::JSON::Object request_data;
+#endif
+
+	try
+	{
+		auto const host = "notify.catenis.io";
+		auto const port = "80";
+		auto const text = "Hello Web Sockets";
+		// The io_context is required for all I/O
+		boost::asio::io_context ioc;
+
+		// These objects perform our I/O
+		tcp::resolver resolver{ ioc };
+		websocket::stream<tcp::socket> ws{ ioc };
+
+		// Look up the domain name
+		auto const results = resolver.resolve(host, port);
+
+		// Make the connection on the IP address we get from a lookup
+		boost::asio::connect(ws.next_layer(), results.begin(), results.end());
+
+		// Send the authorization credentials
+		ws.write(boost::asio::buffer(std::string(request_authorization)));
+
+		// Perform the websocket handshake
+		ws.handshake(host, "/");
+
+		// Send the message
+		ws.write(boost::asio::buffer(std::string(text)));
+
+		// This buffer will hold the incoming message
+		boost::beast::multi_buffer buffer;
+
+		// Read a message into our buffer
+		ws.read(buffer);
+
+		// Close the WebSocket connection
+		ws.close(websocket::close_code::normal);
+
+		// If we get here then the connection is closed gracefully
+
+		// The buffers() function helps print a ConstBufferSequence
+		std::cout << boost::beast::buffers(buffer.data()) << std::endl;
+	}
+	catch (std::exception const& e)
+	{
+		std::cerr << "Error: " << e.what() << std::endl;
+		//return EXIT_FAILURE;
+	}
+	//return EXIT_SUCCESS;
+
+
+	std::string http_return_data;
+	this->internals_->httpRequest("POST", "notify/ws/:eventName HTTP/1.1", params, queries, request_data, http_return_data);
+	this->internals_->parseWSOpenNotificationChannel(data, http_return_data);
 }
 
 // CtnApiClient Constructor
