@@ -269,6 +269,249 @@ void ctn::CtnApiInternals::httpRequest(std::string verb, std::string methodpath,
     }
 }
 
+// Websocket Request
+#if defined(COM_SUPPORT_LIB_BOOST_ASIO)
+void ctn::CtnApiInternals::websocketRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, json_spirit::mValue const &request_data, std::string &response_data)
+#elif defined(COM_SUPPORT_LIB_POCO)
+void ctn::CtnApiInternals::webSocketRequest(std::string verb, std::string methodpath, std::map<std::string, std::string> &params, std::map<std::string, std::string> &queries, Poco::JSON::Object &request_data, std::string &response_data)
+#endif
+{
+	// Assemble complete path
+	methodpath = this->root_api_endpoint_ + "/" + methodpath;
+	
+	// Add path parameters if required
+	for (auto const &data : params)
+	{	
+		// replace the placeholders in the pathname with the actual parameter value - .replace(start,length,value)
+		methodpath.replace(methodpath.find(data.first), data.first.length(), data.second);
+	}
+
+	// Add query string if required
+	for (auto const &data : queries)
+	{
+		// if not first query add "&", else add "?"
+		if (data != *queries.begin()) methodpath += "&";
+		else methodpath += "?";
+		methodpath += data.first + "=" + data.second;
+	}
+
+	std::cout << "Method Path" << methodpath << std::endl;
+	// Add request payload if required
+	std::string payload_json;
+
+	if (verb == "POST")
+	{
+		std::ostringstream payload_buf;
+#if defined(COM_SUPPORT_LIB_BOOST_ASIO)
+		payload_json = json_spirit::write_string(request_data, json_spirit::Output_options::raw_utf8);
+#elif defined(COM_SUPPORT_LIB_POCO)
+		Poco::JSON::Stringifier::stringify(request_data, payload_buf);
+		payload_json = payload_buf.str();
+#endif
+	}
+	std::cout << "Payload JSON" << payload_json << std::endl;
+
+	// Create necessary headers
+	time_t now = std::time(0);
+	char iso_time[17];
+	strftime(iso_time, sizeof iso_time, "%Y%m%dT%H%M%SZ", gmtime(&now));
+	std::map<std::string, std::string> headers;
+
+	headers["host"] = this->host_;
+	headers[TIME_STAMP_HDR] = std::string(iso_time);
+
+	// Create signature and add to header
+	signRequest(verb, methodpath, headers, payload_json, now);
+
+	// Stringify the JSON HEADER
+	std::string header_json;
+#if defined(COM_SUPPORT_LIB_BOOST_ASIO)
+	header_json = json_spirit::write_string(headers, json_spirit::Output_options::raw_utf8);
+#elif defined(COM_SUPPORT_LIB_POCO)
+	Poco::JSON::Stringifier::stringify(headers, payload_buf);
+	header_json = payload_buf.str();
+#endif
+	std::cout << "Header" << header_json << std::endl;
+	// Set up Websocket connection with server and send request
+	try
+	{
+#if defined(COM_SUPPORT_LIB_BOOST_ASIO)
+		// The io_context is required for all I/O
+		boost::asio::io_context ioc;
+		//ssl::context ctx(ssl::context::sslv23_client);
+
+		// These objects perform our I/O
+		tcp::resolver resolver{ ioc };
+		websocket::stream<tcp::socket> ws{ ioc };
+		//ssl::stream<tcp::socket> ssl_stream(ioc, ctx);
+
+		// Look up the domain name
+		auto const results = resolver.resolve(host_, !port_.empty() ? port_ : (secure_ ? "3000" : "3000"));
+		std::cout << "A" << std::endl;
+		std::cout << host_ << " >> "<< port_ << std::endl;
+		if (secure_) {
+			std::cout << "Secure" << std::endl;
+			/*
+			// Set SNI Hostname (many hosts need this to handshake successfully)
+			if (!SSL_set_tlsext_host_name(ssl_stream.native_handle(), host_.c_str()))
+			{
+				boost::system::error_code ec(static_cast<int>(::ERR_get_error()), boost::asio::error::get_ssl_category());
+				throw boost::system::system_error(ec);
+			}
+
+			// Open connection
+			boost::asio::connect(ssl_stream.lowest_layer(), results.begin(), results.end());
+
+			// Perform the SSL handshake
+			ssl_stream.set_verify_mode(boost::asio::ssl::verify_none);
+			ssl_stream.handshake(ssl::stream_base::client);
+			*/
+		}
+		else {
+			// Make the connection on the IP address we get from a lookup
+			std::cout << "B" << std::endl;
+			boost::asio::connect(ws.next_layer(), results.begin(), results.end());
+			std::cout << "C" << std::endl;
+		}
+		std::cout << "D" << std::endl;
+		unsigned int status_code = 0;
+		std::string status_message = "nothing";
+
+
+		std::string request_authorization = "{\"x-bcot-timestamp\":\""+headers[TIME_STAMP_HDR]+"\"},{\"authorization\":\""+headers["authorization"]+"\"}";
+		std::cout << request_authorization << std::endl;
+
+		ws.write(boost::asio::buffer(std::string(request_authorization)));
+		// Prepare HTTP request
+		//http::request<http::string_body> req(verb == "POST" ? http::verb::post : http::verb::get, methodpath, 11);
+		
+		// Perform the websocket handshake
+		ws.handshake(headers["host"], "/");
+
+		/*
+		// Add headers
+		for (auto const &header : headers)
+		{
+			req.set(header.first, header.second);
+		}
+
+		req.set(http::field::content_type, "application/json; charset=utf-8");
+		req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+		req.set(http::field::connection, "close");
+
+		// add payload
+		req.body() = payload_json;
+		req.prepare_payload();
+
+		// Send the HTTP request
+		if (secure_)
+			http::write(ssl_stream, req);
+		else
+			http::write(socket, req);
+
+		// Prepare to receive response.
+		boost::beast::flat_buffer buffer;
+		http::response<http::string_body> res;
+
+		// Receive the HTTP response
+		if (secure_)
+			http::read(ssl_stream, buffer, res);
+		else
+			http::read(socket, buffer, res);
+
+		// Get response and copy to response_data
+		response_data = res.body();
+
+		unsigned int status_code = res.result_int();
+		std::string status_message = res.reason().to_string();
+
+		// Close connection
+		if (secure_) {
+			// Gracefully close the stream
+			boost::system::error_code ec;
+			ssl_stream.shutdown(ec);
+
+			if (ec == boost::asio::error::eof || ec == ssl::error::stream_errors::stream_truncated) {
+				//std::cerr << ">>>>>> SSL stream shutdown failed: " << ec.message() << std::endl;
+				// Rationale: http://stackoverflow.com/questions/25587403/boost-asio-ssl-async-shutdown-always-finishes-with-an-error
+				ec.assign(0, ec.category());
+			}
+
+			if (ec)
+				throw boost::system::system_error(ec);
+		}
+		else {
+			// Gracefully close the socket
+			boost::system::error_code ec;
+			socket.shutdown(tcp::socket::shutdown_both, ec);
+
+			// not_connected happens sometimes so don't bother reporting it.
+			if (ec && ec != boost::system::errc::not_connected)
+				throw boost::system::system_error(ec);
+		}
+		
+#elif defined(COM_SUPPORT_LIB_POCO)
+		/*
+		// Contruct url
+		std::string prefix = (this->secure_ ? "https://" : "http://");
+		std::string url = prefix + this->host_;
+		if (this->port_ != "") url = url + ":" + this->port_;
+		url = url + methodpath;
+
+		Poco::URI uri(url);
+		// HTTP
+		Poco::Net::HTTPClientSession http_session(uri.getHost(), uri.getPort());
+		// HTTPS
+		const Poco::Net::Context::Ptr context = new Poco::Net::Context(Poco::Net::Context::CLIENT_USE, "", Poco::Net::Context::VERIFY_NONE);
+		Poco::Net::HTTPSClientSession ssl_session(uri.getHost(), uri.getPort(), context);
+
+		// Prepare path
+		std::string path(uri.getPathAndQuery());
+		if (path.empty()) path = "/";
+
+		// Make request and add header
+		Poco::Net::HTTPRequest request(verb, path, Poco::Net::HTTPMessage::HTTP_1_1);
+		for (auto const &data : headers)
+		{
+			request.add(data.first, data.second);
+		}
+		request.setContentType("application/json; charset=utf-8");
+		request.setContentLength(payload_json.length());
+
+		// Send Request
+		if (this->secure_) ssl_session.sendRequest(request) << payload_json;
+		else http_session.sendRequest(request) << payload_json;
+
+		// Get response and copy to response_data
+		Poco::Net::HTTPResponse res;
+		if (this->secure_) Poco::StreamCopier::copyToString(ssl_session.receiveResponse(res), response_data);
+		else Poco::StreamCopier::copyToString(http_session.receiveResponse(res), response_data);
+
+		unsigned int status_code = res.getStatus();
+		std::string status_message = res.getReason();
+		*/
+#endif
+		
+		if (status_code != 200) {
+			ApiErrorResponse errorResponse;
+			parseApiErrorResponse(errorResponse, response_data);
+
+			throw CatenisAPIError(status_message, status_code, errorResponse);
+		}
+	}
+#if defined(COM_SUPPORT_LIB_BOOST_ASIO)
+	catch (std::exception& e)
+	{
+		throw CatenisClientError(e.what());
+#elif defined(COM_SUPPORT_LIB_POCO)
+	catch (Poco::Exception &ex)
+	{
+		throw CatenisClientError(ex.displayText());
+#endif
+	}
+	
+}
+
 // Generate Signature and add to request
 void ctn::CtnApiInternals::signRequest(std::string verb, std::string endpoint, std::map<std::string, std::string> &headers, std::string payload, time_t now)
 {
