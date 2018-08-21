@@ -439,7 +439,7 @@ public:
      * @param[in] host (optional, default: catenis.io) :  Host name of target Catenis API server
      * @param[in] port (optional, default: "") : Port of target to connect
      * @param[in] environment (optional, default: "prod") :  Environment of target Catenis API server
-     * ["prod"|"beta"]
+     * ["prod"|"sandbox"]
      * @param[in] secure (optional, default: true) :  Indicates whether a secure connection (HTTPS) should be used
      * @param[in] version (optional, default: DEFAULT_API_VERSION) :  Version of Catenis API to target
      */

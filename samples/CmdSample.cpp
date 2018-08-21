@@ -66,7 +66,7 @@ int main(int argc, char* argv[])
         return 1;
     }
     
-    //ctn::CtnApiClient client(argv[1], argv[2], "catenis.io", "", "beta");
+    //ctn::CtnApiClient client(argv[1], argv[2], "catenis.io", "", "sandbox");
     ctn::CtnApiClient client(argv[1], argv[2], "localhost", "3000", "prod", false);
 
     showUsage();

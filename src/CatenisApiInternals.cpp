@@ -331,8 +331,8 @@ ctn::CtnApiInternals::CtnApiInternals(std::string device_id, std::string api_acc
     this->secure_ = secure;
     this->version_ = version;
     
-    //if beta, make host beta.catenis.io
-    this->subdomain_ = (environment == "beta" ? "beta." : "");
+    //if sandbox, make host sandbox.catenis.io
+    this->subdomain_ = (environment == "sandbox" ? "sandbox." : "");
     this->host_ = this->subdomain_ + host;
         
     this->root_api_endpoint_ = API_PATH + this->version_;

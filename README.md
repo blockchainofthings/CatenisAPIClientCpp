@@ -70,7 +70,7 @@ Add the ```CatenisApiClient.h``` header file to your source code and link it wit
 ```cpp
 #include "CatenisApiClient.h"
 
-ctn::CtnApiClient ctnApiClient(device_id, api_access_secret, "catenis.io", "", "beta");
+ctn::CtnApiClient ctnApiClient(device_id, api_access_secret, "catenis.io", "", "sandbox");
 ```
 
 ### Logging (storing) a message to the blockchain
